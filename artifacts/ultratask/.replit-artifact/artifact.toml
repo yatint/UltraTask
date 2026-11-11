@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "UltraTask"
+description = "An invitation-only internal task tracker for Ultramotiv, with accountable ownership, due dates, creator approvals, team visibility, and auditable activity."
+version = "1.0.0"
+id = "artifacts/ultratask"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25742
+
+[services.development]
+run = "pnpm --filter @workspace/ultratask run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ultratask", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ultratask/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25742"
+BASE_PATH = "/"

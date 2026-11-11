@@ -1,36 +1,450 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 1.0.0
+  description: UltraTask Phase 1
 servers:
   - url: /api
-    description: Base API path
-tags:
-  - name: health
-    description: Health operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
-      tags: [health]
-      summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/HealthStatus"
+              schema: { $ref: "#/components/schemas/HealthStatus" }
+  /preview:
+    get:
+      operationId: getPreview
+      responses:
+        "200":
+          description: Public read-only sample workspace, never live company data
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Workspace" }
+  /workspace:
+    get:
+      operationId: getWorkspace
+      responses:
+        "200":
+          description: User-scoped workspace
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Workspace" }
+  /tickets:
+    post:
+      operationId: createTicket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TicketInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ticket" }
+  /tickets/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer } }
+    get:
+      operationId: getTicket
+      responses:
+        "200":
+          description: Ticket
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ticket" }
+    patch:
+      operationId: updateTicket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TicketUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ticket" }
+  /tickets/{id}/actions:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer } }
+    post:
+      operationId: actOnTicket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TicketAction" }
+      responses:
+        "200":
+          description: Action completed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ticket" }
+  /tickets/{id}/comments:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer } }
+    post:
+      operationId: addComment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommentInput" }
+      responses:
+        "201":
+          description: Comment added
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Comment" }
+  /comments/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer } }
+    patch:
+      operationId: editComment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommentInput" }
+      responses:
+        "200":
+          description: Comment edited within ten minutes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Comment" }
+  /notifications/read:
+    post:
+      operationId: readNotifications
+      responses:
+        "200":
+          description: Read
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+  /settings:
+    patch:
+      operationId: updateSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SettingsInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Settings" }
+  /members:
+    post:
+      operationId: inviteMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MemberInput" }
+      responses:
+        "201":
+          description: Invitation sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Person" }
+  /members/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer } }
+    patch:
+      operationId: updateMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MemberUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Person" }
+  /tags:
+    post:
+      operationId: saveTag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TagInput" }
+      responses:
+        "200":
+          description: Tag saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tag" }
+  /demo:
+    delete:
+      operationId: deleteDemo
+      responses:
+        "200":
+          description: Demo tickets removed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UploadInput" }
+      responses:
+        "200":
+          description: Presigned upload
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UploadResult" }
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
-          type: string
-      required:
-        - status
-
+        status: { type: string }
+    Success:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+    Person:
+      type: object
+      required: [id, name, email, role, designation, isActive, colour, notifyEmailDigest, notifyPush, soundOn]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+        role: { type: string, enum: [admin, member] }
+        designation: { type: string }
+        isActive: { type: boolean }
+        colour: { type: string }
+        avatarUrl: { type: string }
+        whatsappPhone: { type: string }
+        notifyEmailDigest: { type: boolean }
+        notifyPush: { type: boolean }
+        soundOn: { type: boolean }
+        invitedAt: { type: string }
+    Tag:
+      type: object
+      required: [id, name, colour, isActive]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        colour: { type: string }
+        isActive: { type: boolean }
+    TagInput:
+      type: object
+      required: [name, colour]
+      properties:
+        id: { type: integer }
+        name: { type: string, minLength: 1, maxLength: 80 }
+        colour: { type: string }
+        isActive: { type: boolean }
+    Attachment:
+      type: object
+      required: [name, objectPath, size, contentType]
+      properties:
+        name: { type: string }
+        objectPath: { type: string }
+        size: { type: integer }
+        contentType: { type: string }
+    Ticket:
+      type: object
+      required: [id, code, title, description, assigneeId, createdById, watcherIds, priority, status, dueAt, originalDueAt, createdAt, updatedAt, rescheduleCount, nudgeCount, reopenCount, isBlocked, blockedReason, attachments, isDemo]
+      properties:
+        id: { type: integer }
+        code: { type: string }
+        title: { type: string }
+        description: { type: string }
+        assigneeId: { type: integer }
+        createdById: { type: integer }
+        watcherIds: { type: array, items: { type: integer } }
+        projectTagId: { type: [integer, "null"] }
+        priority: { type: string, enum: [low, normal, high, urgent] }
+        status: { type: string, enum: [open, accepted, in_progress, done, closed, declined, cancelled] }
+        dueAt: { type: string }
+        originalDueAt: { type: string }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+        acceptedAt: { type: [string, "null"] }
+        startedAt: { type: [string, "null"] }
+        doneAt: { type: [string, "null"] }
+        closedAt: { type: [string, "null"] }
+        declinedAt: { type: [string, "null"] }
+        cancelledAt: { type: [string, "null"] }
+        lastNudgedAt: { type: [string, "null"] }
+        rescheduleCount: { type: integer }
+        nudgeCount: { type: integer }
+        reopenCount: { type: integer }
+        isBlocked: { type: boolean }
+        blockedReason: { type: string }
+        blockedOnUserId: { type: [integer, "null"] }
+        wasOnTime: { type: [boolean, "null"] }
+        attachments: { type: array, items: { $ref: "#/components/schemas/Attachment" } }
+        isDemo: { type: boolean }
+    TicketInput:
+      type: object
+      required: [title, assigneeId, dueAt]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        assigneeId: { type: integer }
+        dueAt: { type: string }
+        priority: { type: string, enum: [low, normal, high, urgent] }
+        description: { type: string, maxLength: 20000 }
+        projectTagId: { type: [integer, "null"] }
+        watcherIds: { type: array, items: { type: integer } }
+        attachments: { type: array, items: { $ref: "#/components/schemas/Attachment" } }
+        allowDuplicate: { type: boolean }
+    TicketUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        description: { type: string, maxLength: 20000 }
+        priority: { type: string, enum: [low, normal, high, urgent] }
+        projectTagId: { type: [integer, "null"] }
+        watcherIds: { type: array, items: { type: integer } }
+        dueAt: { type: string }
+        assigneeId: { type: integer }
+        reason: { type: string }
+    TicketAction:
+      type: object
+      required: [action]
+      properties:
+        action: { type: string, enum: [accept, start, done, close, reopen, decline, cancel, block, unblock, nudge, share_whatsapp, request_extension, approve_extension, decline_extension, undo] }
+        reason: { type: string }
+        proposedDueAt: { type: string }
+        blockedOnUserId: { type: [integer, "null"] }
+        extensionId: { type: integer }
+    Comment:
+      type: object
+      required: [id, ticketId, authorId, body, createdAt, attachments]
+      properties:
+        id: { type: integer }
+        ticketId: { type: integer }
+        authorId: { type: integer }
+        body: { type: string }
+        createdAt: { type: string }
+        editedAt: { type: [string, "null"] }
+        attachments: { type: array, items: { $ref: "#/components/schemas/Attachment" } }
+    CommentInput:
+      type: object
+      required: [body]
+      properties:
+        body: { type: string, maxLength: 10000 }
+        attachments: { type: array, items: { $ref: "#/components/schemas/Attachment" } }
+    Activity:
+      type: object
+      required: [id, ticketId, action, createdAt, note]
+      properties:
+        id: { type: integer }
+        ticketId: { type: integer }
+        actorId: { type: [integer, "null"] }
+        action: { type: string }
+        fromValue: { type: [string, "null"] }
+        toValue: { type: [string, "null"] }
+        note: { type: string }
+        createdAt: { type: string }
+    Extension:
+      type: object
+      required: [id, ticketId, requestedById, currentDueAt, proposedDueAt, reason, status]
+      properties:
+        id: { type: integer }
+        ticketId: { type: integer }
+        requestedById: { type: integer }
+        currentDueAt: { type: string }
+        proposedDueAt: { type: string }
+        reason: { type: string }
+        status: { type: string, enum: [pending, approved, declined] }
+        decidedById: { type: [integer, "null"] }
+        decidedAt: { type: [string, "null"] }
+        decisionNote: { type: string }
+    Notification:
+      type: object
+      required: [id, userId, ticketId, type, message, isRead, createdAt]
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        ticketId: { type: integer }
+        type: { type: string }
+        message: { type: string }
+        isRead: { type: boolean }
+        createdAt: { type: string }
+    Settings:
+      type: object
+      required: [companyName, ticketPrefix, workingDays, membersSeeAllTickets, nudgeCooldownHours]
+      properties:
+        companyName: { type: string }
+        ticketPrefix: { type: string }
+        workingDays: { type: array, items: { type: integer } }
+        membersSeeAllTickets: { type: boolean }
+        nudgeCooldownHours: { type: integer }
+    SettingsInput:
+      type: object
+      properties:
+        companyName: { type: string }
+        ticketPrefix: { type: string, pattern: "^[A-Z]{1,6}$" }
+        workingDays: { type: array, items: { type: integer, minimum: 0, maximum: 6 }, minItems: 1 }
+        membersSeeAllTickets: { type: boolean }
+    MemberInput:
+      type: object
+      required: [name, email, designation, role]
+      properties:
+        name: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+        designation: { type: string }
+        role: { type: string, enum: [admin, member] }
+        existingId: { type: integer }
+    MemberUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        designation: { type: string }
+        whatsappPhone: { type: string }
+        avatarUrl: { type: string }
+        role: { type: string, enum: [admin, member] }
+        isActive: { type: boolean }
+        reassignToId: { type: integer }
+        notifyEmailDigest: { type: boolean }
+        notifyPush: { type: boolean }
+        soundOn: { type: boolean }
+    UploadInput:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string }
+        size: { type: integer, minimum: 1, maximum: 10485760 }
+        contentType: { type: string, enum: [image/png, image/jpeg, image/webp, image/gif, application/pdf] }
+    UploadResult:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL: { type: string }
+        objectPath: { type: string }
+    Workspace:
+      type: object
+      required: [currentUser, users, tickets, tags, comments, activities, extensions, notifications, settings, isPreview]
+      properties:
+        currentUser: { $ref: "#/components/schemas/Person" }
+        users: { type: array, items: { $ref: "#/components/schemas/Person" } }
+        tickets: { type: array, items: { $ref: "#/components/schemas/Ticket" } }
+        tags: { type: array, items: { $ref: "#/components/schemas/Tag" } }
+        comments: { type: array, items: { $ref: "#/components/schemas/Comment" } }
+        activities: { type: array, items: { $ref: "#/components/schemas/Activity" } }
+        extensions: { type: array, items: { $ref: "#/components/schemas/Extension" } }
+        notifications: { type: array, items: { $ref: "#/components/schemas/Notification" } }
+        settings: { $ref: "#/components/schemas/Settings" }
+        isPreview: { type: boolean }

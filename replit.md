@@ -1,45 +1,77 @@
-# [Project name]
+# UltraTask
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Invitation-only internal task tracking for Ultramotiv's rehabilitation robotics team.
 
-## Run & Operate
+## Product and scope
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Build Phase 1 first; stop for approval before Phase 2.
+- One company, one team, one owner and a required due date per task.
+- The assignee marks work done; the creator or an admin confirms and closes it.
+- Personal tasks skip acceptance and move from open to in progress to closed.
+- Audit history is append-only. There is no comment deletion.
+- Phase 2 (not implemented): scheduled reminders, email digests, web push,
+  escalations, reporting dashboard, CSV export and holidays.
+- Phase 3 is explicitly deferred until four weeks of real use.
+- The uploaded UltraTask brief is the detailed requirements source.
 
-## Stack
+## Run and operate
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- API workflow: `artifacts/api-server: API Server`
+- Web workflow: `artifacts/ultratask: web`
+- `pnpm run typecheck` — workspace typecheck
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API contracts
+- `pnpm --filter @workspace/db run push` — development schema only
+- Use managed workflows, not manually launched dev servers.
 
-## Where things live
+## Stack and locations
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- React, TypeScript, Tailwind, Wouter and React Query in `artifacts/ultratask`.
+- Express API in `artifacts/api-server`.
+- OpenAPI contract in `lib/api-spec/openapi.yaml`.
+- PostgreSQL through `@workspace/db`; schema in `lib/db/src/schema`.
+- Clerk manages verified sign-in, passwords, Google sign-in and invitation emails.
+- App Storage holds private uploaded images/PDFs; PostgreSQL stores metadata only.
+- Frontend theme in `artifacts/ultratask/src/index.css`.
 
-## Architecture decisions
+## Identity and data access
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- First founder account is preapproved by the verified email in the supplied brief.
+  It is not an automatically authenticated account or a shared password.
+- Founder creates the first account through `/sign-up`, verifies that email, and
+  then uses Settings → Team & invites to add missing work emails and invite others.
+- Never invent emails for the six seeded teammates whose emails were not supplied.
+- Later users must have an active invitation record; first account linking checks
+  the invitation's seven-day expiry. Existing linked accounts do not expire.
+- Sign-in alone does not authorize company data. The server checks the local
+  active person, role, ticket relationship and visibility setting.
+- `/api/preview` generates independent public sample data with fictional names and
+  no contact details, never live team data.
+- API writes derive the current actor from Clerk, not request payloads.
+- Task transitions and nudges lock the ticket row in a database transaction.
+- Nudges have a four-hour per-ticket cooldown.
+- Demo deletion preserves audit history and never reseeds deleted tickets.
 
-## Product
+## Time and files
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Store UTC instants, display Asia/Kolkata in 12-hour format.
+- Pending age uses calendar-day boundaries in IST, not elapsed 24-hour periods.
+- Date-only due dates use 6 PM IST; creation never preselects a due date.
+- Uploads use authenticated presigned URLs, image/PDF allowlisting and 10 MB limits.
+- Private downloads recheck current ticket access or profile-image visibility.
+- Do not cache authenticated API responses or file contents in the service worker.
 
-## User preferences
+## Design direction
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- The supplied Ultramotiv logo is the brand asset.
+- User benchmarks: Apple animation, Duolingo onboarding, Linear UI, Pentagram type,
+  Muji minimalism, Airbnb search, Aesop art direction, Notion dashboards,
+  Stripe landing pages and Framer micro-interactions.
+- Interpret these as references, not permission to add gamification or out-of-scope modules.
+- Follow reduced-motion settings; sound is off by default.
 
-## Gotchas
+## Authentication environments
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+Clerk development and production use separate account stores. A development login
+does not establish a production login. Runtime initialization seeds the approved
+founder email and team templates in the target database without copying Clerk IDs.
+Publishing applies the managed database schema; do not add startup-time DDL.
