@@ -6,7 +6,7 @@ import { useActOnTicket } from '@workspace/api-client-react';
 import { errMsg, useInvalidate } from '@/lib/ops';
 import { useWs } from '@/lib/workspace';
 import { applyFilters, activeCount, usePersistedFilters } from '@/lib/filters';
-import { health, isActive, istDay } from '@/lib/time';
+import { isActive, isOverdue, istDay } from '@/lib/time';
 import { PageHeader, EmptyState } from '@/components/shell';
 import { FilterBar } from '@/components/filter-bar';
 import { QuickAdd } from '@/components/create-ticket';
@@ -23,9 +23,9 @@ export default function Waiting() {
     const check = asked.filter((t) => t.status === 'done');
     const ext = asked.filter((t) => isActive(t) && pendingExt.has(t.id));
     const rest = asked.filter((t) => isActive(t) && !pendingExt.has(t.id));
-    const overdue = rest.filter((t) => health(t, now).key === 'overdue');
-    const notAccepted = rest.filter((t) => t.status === 'open' && health(t, now).key !== 'overdue');
-    const motion = rest.filter((t) => t.status !== 'open' && health(t, now).key !== 'overdue');
+    const overdue = rest.filter((t) => isOverdue(t, now));
+    const notAccepted = rest.filter((t) => t.status === 'open' && !isOverdue(t, now));
+    const motion = rest.filter((t) => t.status !== 'open' && !isOverdue(t, now));
     const declined = asked.filter((t) => t.status === 'declined');
     const closed = asked.filter((t) => t.status === 'closed' && t.closedAt && istDay(now) - istDay(t.closedAt) <= 7);
     return { check, ext, overdue, notAccepted, motion, declined, watching, closed };
@@ -74,7 +74,7 @@ export default function Waiting() {
           <div className="space-y-3">
             <TicketGroup title="Ready for your check" hint="Confirm & close, or send back with a note" tickets={g.check} tone="primary" perspective="asker" selectedId={sel} setSelected={setSel} />
             <TicketGroup title="Extension requests" hint="Approve the new date or hold the line" tickets={g.ext} {...chk} tone="amber" perspective="asker" selectedId={sel} setSelected={setSel} />
-            <TicketGroup title="Overdue" hint="Tick several to nudge them together — once every 4 hours each" tickets={g.overdue} {...chk} tone="signal" perspective="asker" selectedId={sel} setSelected={setSel} />
+            <TicketGroup title="Overdue" hint="Send each owner an in-app overdue reminder. Email is not connected." tickets={g.overdue} tone="signal" perspective="asker" selectedId={sel} setSelected={setSel} />
             <TicketGroup title="Not yet accepted" tickets={g.notAccepted} {...chk} perspective="asker" selectedId={sel} setSelected={setSel} />
             <TicketGroup title="In motion" tickets={g.motion} {...chk} perspective="asker" selectedId={sel} setSelected={setSel} />
             <TicketGroup title="Declined — needs a new owner" tickets={g.declined} tone="signal" perspective="asker" selectedId={sel} setSelected={setSel} />

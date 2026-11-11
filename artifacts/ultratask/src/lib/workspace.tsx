@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import type { Person, Tag, Ticket, Workspace } from '@workspace/api-client-react';
 
-export type View = 'tasks' | 'waiting' | 'team' | 'settings';
+export type View = 'tasks' | 'waiting' | 'team' | 'snapshot' | 'settings';
 
 interface Ctx {
   ws: Workspace;

@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { seedWorkspace } from "./lib/seed";
+import { startOverdueReminderLoop } from "./lib/overdue-reminders";
 
 const rawPort = process.env["PORT"];
 
@@ -23,6 +24,7 @@ seedWorkspace().then(() => app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+  startOverdueReminderLoop();
 })).catch((err) => {
   logger.error({ err }, "Workspace initialization failed");
   process.exit(1);

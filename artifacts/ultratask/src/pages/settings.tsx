@@ -37,7 +37,7 @@ export default function Settings() {
           {tab === 'profile' && <Profile />}
           {tab === 'team' && <TeamSettings />}
           {tab === 'projects' && <Projects />}
-          {tab === 'workspace' && <WorkspaceSettings />}
+          {tab === 'workspace' && <><WorkspaceSettings /><Reminders /></>}
           {tab === 'app' && <InstallApp />}
           {tab === 'data' && <DemoData />}
         </motion.div>
@@ -282,6 +282,39 @@ function WorkspaceSettings() {
           {settings.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}Save workspace
         </Button>
       </div>}
+    </Card>
+  );
+}
+
+function Reminders() {
+  const { ws, isAdmin, guard } = useWs();
+  const { settings } = useOps();
+  const on = ws.settings.automaticOverdueReminders !== false;
+  const set = (v: boolean) => {
+    if (!guard('change reminders')) return;
+    settings.mutate({ data: { automaticOverdueReminders: v } }, { onSuccess: () => toast.success(v ? 'Automatic in-app overdue reminders on' : 'Automatic overdue reminders off') });
+  };
+  return (
+    <Card title="Overdue reminders" desc="How owners hear about work that slipped past its deadline.">
+      <div className="flex items-start justify-between gap-4 rounded-xl bg-paper p-4 ring-1 ring-border">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold">Automatic in-app reminders</div>
+          <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">Once per overdue task, owner and deadline each day (IST). Active, real tasks only; sample tickets are skipped.</p>
+        </div>
+        <Switch checked={on} disabled={!isAdmin || settings.isPending} onCheckedChange={set} aria-label="Automatic in-app overdue reminders" data-testid="switch-auto-reminders" />
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-4 rounded-xl p-4 ring-1 ring-border">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold">Email reminders</div>
+          <p className="mt-1 text-[13px] text-muted-foreground">No email provider is connected, so no reminder emails are sent.</p>
+        </div>
+        <span className="shrink-0 rounded-md bg-muted px-2 py-1 text-[12px] font-semibold text-foreground/70" data-testid="status-email-reminders">Not connected</span>
+      </div>
+      <p className="mt-4 text-[12.5px] leading-relaxed text-muted-foreground">
+        The server checks every minute while it is running, and again whenever someone loads the workspace, so missed days catch up when the app reopens.
+        A new in-app reminder appears at the next check. Delivery while the app is fully stopped needs always-on or scheduled hosting.
+        {!isAdmin && ' Only admins can change this.'}
+      </p>
     </Card>
   );
 }

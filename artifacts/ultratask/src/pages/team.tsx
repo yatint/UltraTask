@@ -1,13 +1,12 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Lock } from 'lucide-react';
 import type { Ticket, TicketActionAction } from '@workspace/api-client-react';
 import { toast } from 'sonner';
 import { useTicketActions } from '@/lib/ops';
 import { cn } from '@/lib/utils';
 import { useWs } from '@/lib/workspace';
 import { applyFilters, usePersistedFilters } from '@/lib/filters';
-import { fmtDue, health, isActive, istDay } from '@/lib/time';
+import { fmtDue, isActive, isOverdue, istDay } from '@/lib/time';
 import { PageHeader, EmptyState } from '@/components/shell';
 import { FilterBar } from '@/components/filter-bar';
 import { Avatar, HealthLabel, PriorityGlyph, STATUS_LABEL, StatusIcon, TagPill, TicketFlags } from '@/components/atoms';
@@ -30,7 +29,7 @@ export default function Team() {
     return <div className="mx-auto max-w-[1100px]"><PageHeader title="Team" /><EmptyState title="Admins only" body="The team board shows everyone's load. Ask an admin if you need it." /></div>;
   }
   const active = ws.tickets.filter(isActive);
-  const overdue = active.filter((t) => health(t, now).key === 'overdue').length;
+  const overdue = active.filter((t) => isOverdue(t, now)).length;
   const awaiting = ws.tickets.filter((t) => t.status === 'done').length;
 
   return (
@@ -57,7 +56,7 @@ function People({ list, sel, setSel }: { list: Ticket[]; sel: number | null; set
   const now = Date.now();
   const people = ws.users.filter((u) => u.isActive).map((u) => {
     const ts = list.filter((t) => t.assigneeId === u.id && t.status !== 'closed');
-    return { u, ts, over: ts.filter((t) => health(t, now).key === 'overdue').length, act: ts.filter(isActive).length, na: ts.filter((t) => t.status === 'open').length, blk: ts.filter((t) => isActive(t) && t.isBlocked).length, chk: ts.filter((t) => t.status === 'done').length };
+    return { u, ts, over: ts.filter((t) => isOverdue(t, now)).length, act: ts.filter(isActive).length, na: ts.filter((t) => t.status === 'open').length, blk: ts.filter((t) => isActive(t) && t.isBlocked).length, chk: ts.filter((t) => t.status === 'done').length };
   }).sort((a, b) => b.over - a.over || b.act - a.act);
   const max = Math.max(1, ...people.map((p) => p.act));
   if (!list.length) return <EmptyState art="search" title="Nothing matches" body="Clear a filter to see the board again." />;
@@ -100,10 +99,26 @@ function moveAction(from: Ticket['status'], to: Col): TicketActionAction | 'reop
   return null;
 }
 
+const SHORT: Record<Col, string> = { open: 'Open', accepted: 'Accepted', in_progress: 'Doing', done: 'Done', closed: 'Closed' };
+
+function KCard({ t, dense }: { t: Ticket; dense?: boolean }) {
+  const { openTicket, person } = useWs();
+  return (
+    <button draggable onDragStart={(e) => { e.dataTransfer.setData('text/ticket', String(t.id)); e.dataTransfer.effectAllowed = 'move'; }} onClick={() => openTicket(t.id)}
+      className={cn('block w-full min-w-0 cursor-grab rounded-xl bg-card text-left shadow-xs ring-1 ring-border transition-[box-shadow,transform] hover:-translate-y-0.5 hover:shadow-md active:cursor-grabbing', dense ? 'p-3' : 'p-3.5')} data-testid={`card-ticket-${t.id}`}>
+      <div className="flex min-w-0 items-center gap-2 text-[12px] text-muted-foreground"><PriorityGlyph p={t.priority} /><span className="truncate font-code">{t.code}</span><span className="ml-auto shrink-0"><Avatar p={person(t.assigneeId)} size={20} /></span></div>
+      <div className={cn('mt-1.5 break-words font-semibold leading-snug', dense ? 'line-clamp-3 text-[13.5px]' : 'line-clamp-2 text-[14.5px]')}>{t.title}</div>
+      <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"><HealthLabel t={t} compact /><TagPill id={t.projectTagId} />{!dense && <TicketFlags t={t} />}</div>
+      <div className="mt-1.5 truncate text-[12px] text-muted-foreground" title={`from ${person(t.createdById)?.name ?? ''}`}>Due {fmtDue(t.dueAt)}{!dense && <> · from {person(t.createdById)?.name}</>}</div>
+    </button>
+  );
+}
+
 function Kanban({ list }: { list: Ticket[] }) {
-  const { openTicket, person, guard } = useWs();
+  const { openTicket, guard } = useWs();
   const { run } = useTicketActions();
   const [over, setOver] = useState<Col | null>(null);
+  const [tab, setTab] = useState<Col>('open');
   const drop = (c: Col, e: React.DragEvent) => {
     e.preventDefault(); setOver(null);
     const t = list.find((x) => x.id === Number(e.dataTransfer.getData('text/ticket')));
@@ -114,32 +129,60 @@ function Kanban({ list }: { list: Ticket[] }) {
     if (a === 'reopen') { toast('Reopening needs a reason — do it from the ticket.'); openTicket(t.id); return; }
     run(t, { action: a });
   };
+  const dz = (c: Col) => ({
+    onDragOver: (e: React.DragEvent) => { e.preventDefault(); setOver(c); },
+    onDragLeave: () => setOver((o) => (o === c ? null : o)),
+    onDrop: (e: React.DragEvent) => drop(c, e),
+  });
+  const by = (c: Col) => list.filter((t) => t.status === c);
+  const empty = <div className="flex items-center justify-center rounded-lg border border-dashed border-border py-6 text-[13px] text-muted-foreground">Drop here</div>;
+  const tabTs = by(tab);
   return (
-    <div className="scrollbar-thin -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-4 md:mx-0 md:px-0" tabIndex={0} aria-label="Status columns, scroll sideways for more">
-      {COLS.map((c) => {
-        const ts = list.filter((t) => t.status === c);
-        return (
-          <section key={c} onDragOver={(e) => { e.preventDefault(); setOver(c); }} onDragLeave={() => setOver((o) => (o === c ? null : o))} onDrop={(e) => drop(c, e)}
-            className={cn('w-[300px] shrink-0 snap-start rounded-2xl bg-muted/60 p-2 ring-2 ring-transparent transition-colors', over === c && 'bg-accent/70 ring-primary/40')} data-testid={`column-${c}`}>
-            <div className="flex items-center gap-2 px-2 py-1.5">
-              <StatusIcon status={c} /><span className="text-[13px] font-semibold">{STATUS_LABEL[c]}{c === 'closed' && <span className="font-normal text-muted-foreground"> · 7d</span>}</span>
-              <span className="ml-auto rounded-md bg-card px-1.5 font-code text-[12px] font-medium">{ts.length}</span>
-            </div>
-            <div className="mt-1 space-y-2">
-              {ts.map((t) => (
-                <button key={t.id} draggable onDragStart={(e) => { e.dataTransfer.setData('text/ticket', String(t.id)); e.dataTransfer.effectAllowed = 'move'; }} onClick={() => openTicket(t.id)}
-                  className="block w-full cursor-grab rounded-xl bg-card p-3.5 ring-1 ring-border text-left shadow-xs transition-[box-shadow,transform] hover:-translate-y-0.5 hover:shadow-md active:cursor-grabbing" data-testid={`card-ticket-${t.id}`}>
-                  <div className="flex items-center gap-2 text-[12px] text-muted-foreground"><PriorityGlyph p={t.priority} /><span className="font-code">{t.code}</span><span className="ml-auto"><Avatar p={person(t.assigneeId)} size={20} /></span></div>
-                  <div className="mt-1.5 line-clamp-2 text-[14.5px] font-semibold leading-snug">{t.title}</div>
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5"><HealthLabel t={t} compact /><TagPill id={t.projectTagId} /><TicketFlags t={t} /></div>
-                  <div className="mt-2 text-[12.5px] text-muted-foreground">Due {fmtDue(t.dueAt)} · from {person(t.createdById)?.name}</div>
-                </button>
-              ))}
-              {ts.length === 0 && <div className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border py-6 text-[13px] text-muted-foreground"><Lock className="h-3 w-3 opacity-0" />Drop here</div>}
-            </div>
-          </section>
-        );
-      })}
-    </div>
+    <>
+      <div className="hidden gap-2.5 xl:grid xl:grid-cols-5" data-testid="kanban-wide">
+        {COLS.map((c) => {
+          const ts = by(c);
+          return (
+            <section key={c} {...dz(c)} className={cn('min-w-0 rounded-2xl bg-muted/60 p-2 ring-2 ring-transparent transition-colors', over === c && 'bg-accent/70 ring-primary/40')} data-testid={`column-${c}`}>
+              <div className="flex min-w-0 items-center gap-2 px-1.5 py-1.5">
+                <StatusIcon status={c} /><span className="truncate text-[13px] font-semibold">{STATUS_LABEL[c]}{c === 'closed' && <span className="font-normal text-muted-foreground"> · 7d</span>}</span>
+                <span className="ml-auto rounded-md bg-card px-1.5 font-code text-[12px] font-medium">{ts.length}</span>
+              </div>
+              <div className="mt-1 space-y-2">{ts.map((t) => <KCard key={t.id} t={t} dense />)}{ts.length === 0 && empty}</div>
+            </section>
+          );
+        })}
+      </div>
+      <div className="xl:hidden" data-testid="kanban-narrow">
+        <div role="tablist" aria-label="Status" className="grid grid-cols-5 gap-1 rounded-2xl bg-muted/70 p-1">
+          {COLS.map((c) => {
+            const n = by(c).length;
+            const on = tab === c;
+            return (
+              <button key={c} id={`kanban-status-${c}`} role="tab" aria-selected={on} aria-controls={`kanban-panel-${c}`} tabIndex={on ? 0 : -1} {...dz(c)} onClick={() => setTab(c)} data-testid={`tab-column-${c}`}
+                onKeyDown={(e) => {
+                  const index = COLS.indexOf(c);
+                  const next = e.key === 'ArrowRight' ? (index + 1) % COLS.length : e.key === 'ArrowLeft' ? (index + COLS.length - 1) % COLS.length : e.key === 'Home' ? 0 : e.key === 'End' ? COLS.length - 1 : null;
+                  if (next === null) return;
+                  e.preventDefault();
+                  setTab(COLS[next]);
+                  document.getElementById(`kanban-status-${COLS[next]}`)?.focus();
+                }}
+                className={cn('relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[11.5px] font-semibold transition-colors sm:flex-row sm:gap-1.5 sm:text-[13px]',
+                  on ? 'text-foreground' : 'text-muted-foreground hover:text-foreground', over === c && 'ring-2 ring-primary/50')}>
+                {on && <motion.span layoutId="kanban-tab" className="absolute inset-0 rounded-xl bg-card shadow-xs ring-1 ring-border" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
+                <span className="relative flex min-w-0 items-center gap-1.5"><StatusIcon status={c} className="hidden sm:block" /><span className="truncate">{SHORT[c]}</span></span>
+                <span className="relative font-code text-[11.5px] font-medium tabular-nums">{n}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 px-1 text-[12.5px] text-muted-foreground">{STATUS_LABEL[tab]}{tab === 'closed' && ' in the last 7 days'}. Drag a card onto a tab to move it, or open it for every action.</p>
+        <motion.div key={tab} id={`kanban-panel-${tab}`} role="tabpanel" aria-labelledby={`kanban-status-${tab}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }} {...dz(tab)} className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3" data-testid={`column-${tab}`}>
+          {tabTs.map((t) => <KCard key={t.id} t={t} />)}
+          {tabTs.length === 0 && <div className="sm:col-span-2 lg:col-span-3">{empty}</div>}
+        </motion.div>
+      </div>
+    </>
   );
 }

@@ -223,6 +223,16 @@
 .cl-formButtonPrimary:hover { background: hsl(186 70% 26%) !important; }
 .cl-socialButtonsBlockButton:hover { background: hsl(40 16% 92%) !important; }
 
+/* Overdue dot: gentle red breathing halo */
+.dot-overdue { position: relative; background: hsl(var(--signal)) !important; box-shadow: 0 0 0 0 hsl(var(--signal) / 0.45); animation: overdue-glow 2.2s ease-in-out infinite; }
+@keyframes overdue-glow {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--signal) / 0.42); }
+  50% { box-shadow: 0 0 0 4px hsl(var(--signal) / 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dot-overdue { animation: none !important; box-shadow: 0 0 0 2px hsl(var(--signal) / 0.22); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }

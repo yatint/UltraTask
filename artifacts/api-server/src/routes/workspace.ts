@@ -4,19 +4,40 @@ import {
   CreateTicketBody, CreateTicketResponse, UpdateTicketParams, UpdateTicketBody,
   UpdateTicketResponse, ActOnTicketParams, ActOnTicketBody, ActOnTicketResponse,
   AddCommentParams, AddCommentBody, AddCommentResponse, EditCommentParams, EditCommentBody, EditCommentResponse,
+  GetSnapshotQueryParams, GetSnapshotResponse, GetPreviewSnapshotResponse,
+  SendOverdueReminderParams, SendOverdueReminderResponse,
   type Person, type Ticket, type Comment, type Settings, type Notification,
 } from "@workspace/api-zod";
 import { pool, get, list, insert, save, transaction, requireCondition, HttpError } from "../lib/store";
 import { publicPreview } from "../lib/seed";
-import { requirePerson, limitWrites, readableTicket, involved } from "../middlewares/identity";
+import { requirePerson, limitWrites, readableTicket, involved, adminOnly } from "../middlewares/identity";
 import { activePerson, futureDate, log, notify, persistTicket, ticketAction, updateTicket, validateAttachments, nowISO } from "../lib/ticket-rules";
+import { buildSnapshot } from "../lib/task-insights";
+import { deliverOverdueReminder, sweepOverdueReminders } from "../lib/overdue-reminders";
 
 const router: IRouter = Router();
 router.get("/preview", (_req, res) => {
   res.set("Cache-Control", "no-store").json(GetPreviewResponse.parse(publicPreview()));
 });
+router.get("/preview/snapshot", (_req, res) => {
+  const ws = publicPreview();
+  res.set("Cache-Control", "no-store").json(GetPreviewSnapshotResponse.parse(
+    buildSnapshot(ws.users, ws.tickets, ws.activities, true),
+  ));
+});
 router.use(requirePerson, limitWrites);
+router.get("/snapshot", async (req, res): Promise<void> => {
+  adminOnly(res.locals.person);
+  requireCondition(req.query.includeDemo === undefined || ["true", "false"].includes(String(req.query.includeDemo)), "Choose whether to include sample tasks.");
+  const { includeDemo } = GetSnapshotQueryParams.parse({ includeDemo: req.query.includeDemo === "true" });
+  const [users, tickets, activities] = await Promise.all([
+    list<Person>(pool, "people"), list<Ticket>(pool, "tickets"),
+    list<import("@workspace/api-zod").Activity>(pool, "activity"),
+  ]);
+  res.set("Cache-Control", "no-store").json(GetSnapshotResponse.parse(buildSnapshot(users, tickets, activities, includeDemo)));
+});
 router.get("/workspace", async (_req, res): Promise<void> => {
+  await sweepOverdueReminders();
   const p: Person = res.locals.person;
   const settings = (await get<Settings>(pool, "settings", 1))!;
   const tickets = await list<Ticket>(pool, "tickets",
@@ -95,6 +116,13 @@ router.post("/tickets/:id/actions", async (req, res): Promise<void> => {
   const body = ActOnTicketBody.parse(req.body);
   const t = await transaction(async (q) => ticketAction(q, res.locals.person, await readableTicket(q, res.locals.person, id, true), body));
   res.json(ActOnTicketResponse.parse(t));
+});
+router.post("/tickets/:id/overdue-reminder", async (req, res): Promise<void> => {
+  const { id } = SendOverdueReminderParams.parse(req.params);
+  const result = await transaction(async (q) => deliverOverdueReminder(q,
+    await readableTicket(q, res.locals.person, id, true), res.locals.person));
+  requireCondition(result, "This overdue reminder was already delivered.", 429);
+  res.json(SendOverdueReminderResponse.parse(result));
 });
 router.post("/tickets/:id/comments", async (req, res): Promise<void> => {
   const { id } = AddCommentParams.parse(req.params);

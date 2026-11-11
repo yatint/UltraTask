@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Ticket, Workspace } from '@workspace/api-client-react';
-import { dayFromInput, health, istDay } from './time';
+import { dayFromInput, health, isOverdue, istDay } from './time';
 
 export type SortKey = 'due' | 'created' | 'priority' | 'updated';
 export interface Filters {
@@ -68,7 +68,8 @@ export function applyFilters(list: Ticket[], f: Filters, ws: Workspace, now = Da
     if (f.health.length) {
       const h = health(t, now).key;
       const blocked = t.isBlocked && f.health.includes('blocked');
-      if (!f.health.includes(h) && !blocked) return false;
+      const late = f.health.includes('overdue') && isOverdue(t, now);
+      if (!f.health.includes(h) && !blocked && !late) return false;
     }
     if ((f.createdFrom || f.createdTo) && !inRange(t.createdAt, f.createdFrom, f.createdTo)) return false;
     if ((f.dueFrom || f.dueTo) && !inRange(t.dueAt, f.dueFrom, f.dueTo)) return false;

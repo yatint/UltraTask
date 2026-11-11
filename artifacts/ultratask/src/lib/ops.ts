@@ -42,6 +42,7 @@ export function useInvalidate() {
   const qc = useQueryClient();
   return (id?: number) => {
     qc.invalidateQueries({ queryKey: getGetWorkspaceQueryKey() });
+    qc.invalidateQueries({ queryKey: ['/api/snapshot'] });
     if (id) qc.invalidateQueries({ queryKey: getGetTicketQueryKey(id) });
   };
 }

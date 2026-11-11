@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Api
   version: 1.0.0
-  description: UltraTask Phase 1
+  description: UltraTask task tracking, overdue reminders and lifetime team snapshot
 servers:
   - url: /api
 paths:
@@ -33,6 +33,26 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Workspace" }
+  /snapshot:
+    get:
+      operationId: getSnapshot
+      parameters:
+        - { name: includeDemo, in: query, schema: { type: boolean, default: false } }
+      responses:
+        "200":
+          description: Admin-only lifetime team performance, including inactive members
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TeamSnapshot" }
+  /preview/snapshot:
+    get:
+      operationId: getPreviewSnapshot
+      responses:
+        "200":
+          description: Lifetime snapshot of fictional sample data only
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TeamSnapshot" }
   /tickets:
     post:
       operationId: createTicket
@@ -103,6 +123,17 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Comment" }
+  /tickets/{id}/overdue-reminder:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer } }
+    post:
+      operationId: sendOverdueReminder
+      responses:
+        "200":
+          description: In-app overdue reminder delivered; email delivery availability is reported explicitly
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OverdueReminderResult" }
   /comments/{id}:
     parameters:
       - { name: id, in: path, required: true, schema: { type: integer } }
@@ -392,6 +423,7 @@ components:
         workingDays: { type: array, items: { type: integer } }
         membersSeeAllTickets: { type: boolean }
         nudgeCooldownHours: { type: integer }
+        automaticOverdueReminders: { type: boolean }
     SettingsInput:
       type: object
       properties:
@@ -399,6 +431,69 @@ components:
         ticketPrefix: { type: string, pattern: "^[A-Z]{1,6}$" }
         workingDays: { type: array, items: { type: integer, minimum: 0, maximum: 6 }, minItems: 1 }
         membersSeeAllTickets: { type: boolean }
+        automaticOverdueReminders: { type: boolean }
+    OverdueReminderResult:
+      type: object
+      required: [ticketId, recipientId, notificationId, sentAt, inAppStatus, emailStatus, message]
+      properties:
+        ticketId: { type: integer }
+        recipientId: { type: integer }
+        notificationId: { type: integer }
+        sentAt: { type: string }
+        inAppStatus: { type: string, enum: [sent] }
+        emailStatus: { type: string, enum: [not_connected] }
+        message: { type: string }
+    SnapshotCounts:
+      type: object
+      required: [totalAssigned, open, overdue, completed, early, onTime, late, waitingForCheck, cancelled, declined, unknownTiming, onTimeRate]
+      properties:
+        totalAssigned: { type: integer }
+        open: { type: integer }
+        overdue: { type: integer }
+        completed: { type: integer }
+        early: { type: integer }
+        onTime: { type: integer }
+        late: { type: integer }
+        waitingForCheck: { type: integer }
+        cancelled: { type: integer }
+        declined: { type: integer }
+        unknownTiming: { type: integer }
+        onTimeRate: { type: [number, "null"] }
+    SnapshotTicketGroups:
+      type: object
+      required: [totalAssigned, open, overdue, completed, early, onTime, late, waitingForCheck, cancelled, declined, unknownTiming]
+      properties:
+        totalAssigned: { type: array, items: { type: integer } }
+        open: { type: array, items: { type: integer } }
+        overdue: { type: array, items: { type: integer } }
+        completed: { type: array, items: { type: integer } }
+        early: { type: array, items: { type: integer } }
+        onTime: { type: array, items: { type: integer } }
+        late: { type: array, items: { type: integer } }
+        waitingForCheck: { type: array, items: { type: integer } }
+        cancelled: { type: array, items: { type: integer } }
+        declined: { type: array, items: { type: integer } }
+        unknownTiming: { type: array, items: { type: integer } }
+    SnapshotMember:
+      type: object
+      required: [personId, name, designation, colour, isActive, counts, ticketIds]
+      properties:
+        personId: { type: integer }
+        name: { type: string }
+        designation: { type: string }
+        colour: { type: string }
+        avatarUrl: { type: string }
+        isActive: { type: boolean }
+        counts: { $ref: "#/components/schemas/SnapshotCounts" }
+        ticketIds: { $ref: "#/components/schemas/SnapshotTicketGroups" }
+    TeamSnapshot:
+      type: object
+      required: [generatedAt, includeDemo, totals, members]
+      properties:
+        generatedAt: { type: string }
+        includeDemo: { type: boolean }
+        totals: { $ref: "#/components/schemas/SnapshotCounts" }
+        members: { type: array, items: { $ref: "#/components/schemas/SnapshotMember" } }
     MemberInput:
       type: object
       required: [name, email, designation, role]

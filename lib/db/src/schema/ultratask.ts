@@ -52,5 +52,13 @@ export const uploads = pgTable("ut_uploads", {
   data: jsonb("data").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+export const overdueReminders = pgTable("ut_overdue_reminders", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").notNull(),
+  recipientId: integer("recipient_id").notNull().references(() => people.id),
+  eventKey: text("event_key").notNull().unique(),
+  kind: text("kind").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [index("ut_overdue_reminders_ticket").on(t.ticketId)]);
 export const insertPersonSchema = createInsertSchema(people).omit({ id: true });
 export const insertTicketSchema = createInsertSchema(tickets).omit({ id: true });

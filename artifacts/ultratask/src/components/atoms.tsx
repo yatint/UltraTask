@@ -1,7 +1,7 @@
 import type { Person, Ticket } from '@workspace/api-client-react';
 import { cn } from '@/lib/utils';
 import { assetUrl, useWs } from '@/lib/workspace';
-import { fmtDateTime, health, type HealthKey } from '@/lib/time';
+import { fmtDateTime, health, isOverdue, type HealthKey } from '@/lib/time';
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
@@ -105,7 +105,7 @@ export function HealthLabel({ t, compact }: { t: Ticket; compact?: boolean }) {
   const h = health(t);
   return (
     <span data-testid={`health-${t.id}`} className={cn('inline-flex items-center gap-1.5 whitespace-nowrap text-[12.5px] font-semibold', HEALTH_STYLE[h.key])}>
-      <span aria-hidden className={cn('h-2 w-2 shrink-0 rounded-full', HEALTH_BORDER[h.key])} />
+      <span aria-hidden data-overdue={isOverdue(t) || undefined} className={cn('h-2 w-2 shrink-0 rounded-full', HEALTH_BORDER[h.key], isOverdue(t) && 'dot-overdue')} />
       {compact ? h.label.replace('On track · ', '') : h.label}
     </span>
   );

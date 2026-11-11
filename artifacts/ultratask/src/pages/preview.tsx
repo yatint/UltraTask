@@ -9,6 +9,7 @@ import { TicketDetail } from '@/components/ticket-detail';
 import MyTasks from './my-tasks';
 import Waiting from './waiting';
 import Team from './team';
+import Snapshot from './snapshot';
 import { ErrorScreen, ShellSkeleton } from './states';
 
 export default function PreviewApp() {
@@ -29,6 +30,7 @@ export default function PreviewApp() {
           {view === 'tasks' && <MyTasks />}
           {view === 'waiting' && <Waiting />}
           {view === 'team' && <Team />}
+          {view === 'snapshot' && <Snapshot />}
         </motion.div>
       </Shell>
       <TicketSheet id={ticket} onClose={() => setTicket(null)} />

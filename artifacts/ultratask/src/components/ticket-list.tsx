@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useWs } from '@/lib/workspace';
 import { closedStats, fmtDateTime, fmtDue, health, pendingDays } from '@/lib/time';
 import { useTicketActions } from '@/lib/ops';
+import { OverdueReminderButton } from './overdue-reminder';
 import { Avatar, HEALTH_BORDER, HealthLabel, PriorityGlyph, StatusIcon, TagPill, TicketFlags } from './atoms';
 
 export function primaryAction(t: Ticket, meId: number, isAdmin: boolean): { action: 'accept' | 'start' | 'done' | 'close'; label: string } | null {
@@ -100,6 +101,7 @@ export function TicketRow({ t, selected, onSelect, perspective, checked, onCheck
             )}
             {comments > 0 && <span className="inline-flex items-center gap-1"><MessageSquare className="h-3.5 w-3.5" />{comments}</span>}
             <TicketFlags t={t} />
+            {!pa && perspective === 'asker' && <span className="md:hidden"><OverdueReminderButton t={t} variant="row" /></span>}
           </div>
         </div>
 
@@ -112,6 +114,7 @@ export function TicketRow({ t, selected, onSelect, perspective, checked, onCheck
           <span className="pl-[14px] text-[12px] tabular-nums text-muted-foreground">{fmtDue(t.dueAt)}</span>
         </div>
         <div className="hidden justify-end md:flex">
+          {!pa && perspective === 'asker' && <OverdueReminderButton t={t} variant="row" className="px-2" />}
           {pa && (
             <button
               data-testid={`button-quick-${pa.action}-${t.id}`}

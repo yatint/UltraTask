@@ -10,6 +10,7 @@ import { assetUrl, useWs } from '@/lib/workspace';
 import { errMsg, useOps, useTicketActions, useUploader } from '@/lib/ops';
 import { customDueIso, fmtAgo, fmtDateTime, fmtDue, inputFromDay, istDay, isActive } from '@/lib/time';
 import { Avatar, Chip, HealthLabel, PriorityGlyph, STATUS_LABEL, StatusIcon, TagPill, TicketFlags } from './atoms';
+import { OverdueReminderButton, ReminderNote, useReminderState } from './overdue-reminder';
 import { DueField, PersonPicker, PriorityPicker, TagSelect } from './pickers';
 
 type DlgCfg = { action: TicketActionAction; title: string; desc: string; min?: number; date?: boolean; person?: boolean; cta: string; extensionId?: number; danger?: boolean; proof?: boolean };
@@ -32,6 +33,7 @@ export function TicketDetail({ t }: { t: Ticket }) {
   const cooldownMs = ws.settings.nudgeCooldownHours * 3600000;
   const nudgeLeft = t.lastNudgedAt ? new Date(t.lastNudgedAt).getTime() + cooldownMs - Date.now() : 0;
 
+  const rem = useReminderState(t);
   const busy = (a: TicketActionAction) => pending && variables?.id === t.id && variables.data.action === a;
   type Btn = { a: TicketActionAction; label: string; icon: typeof Check; primary?: boolean; onClick?: () => void; disabled?: boolean; title?: string };
   const btns: Btn[] = [];
@@ -57,7 +59,7 @@ export function TicketDetail({ t }: { t: Ticket }) {
     else btns.push({ a: 'block', label: 'Blocked', icon: Lock, onClick: () => setDlg({ action: 'block', title: 'What is it waiting on?', desc: 'Name the blocker and, if it is a person, who.', min: 5, person: true, cta: 'Mark blocked' }) });
   }
   if (isActive(t) && isAssignee && !pendingExt) btns.push({ a: 'request_extension', label: 'Ask for more time', icon: Clock, onClick: () => setDlg(EXT_CFG) });
-  if (isActive(t) && !isAssignee && (isCreator || isWatcher || isAdmin)) btns.push({ a: 'nudge', label: nudgeLeft > 0 ? `Nudge in ${Math.ceil(nudgeLeft / 3600000)}h` : 'Nudge', icon: BellRing, disabled: nudgeLeft > 0, title: nudgeLeft > 0 ? `One nudge per ${ws.settings.nudgeCooldownHours}h` : 'Send a gentle reminder' });
+  if (isActive(t) && !rem.show && !isAssignee && (isCreator || isWatcher || isAdmin)) btns.push({ a: 'nudge', label: nudgeLeft > 0 ? `Nudge in ${Math.ceil(nudgeLeft / 3600000)}h` : 'Nudge', icon: BellRing, disabled: nudgeLeft > 0, title: nudgeLeft > 0 ? `One nudge per ${ws.settings.nudgeCooldownHours}h` : 'Send a gentle reminder' });
   if ((isActive(t) || t.status === 'declined') && asker) btns.push({ a: 'cancel', label: 'Cancel ticket', icon: Ban, onClick: () => setDlg({ action: 'cancel', title: 'Cancel this ticket?', desc: 'It stays in history. Give a short reason.', min: 5, cta: 'Cancel ticket', danger: true }) });
   const participant = isAssignee || isCreator || isWatcher || isAdmin;
   const readOnly = !participant;
@@ -79,6 +81,7 @@ export function TicketDetail({ t }: { t: Ticket }) {
       <h1 className="mt-3 text-balance text-[24px] font-bold leading-tight tracking-[-0.025em] md:text-[30px]" data-testid="text-ticket-title">{t.title}</h1>
 
       <div className="mt-5 flex flex-wrap gap-2 rounded-2xl bg-card p-2 shadow-sm ring-1 ring-border" data-testid="ticket-actions">
+        {!readOnly && <OverdueReminderButton t={t} />}
         {btns.map((b) => (
           <Button key={b.a + b.label} variant={b.primary ? 'default' : 'ghost'} disabled={b.disabled || busy(b.a)} title={b.title}
             className={cn('h-11 gap-2 rounded-xl px-4 text-[14px] font-semibold transition-transform active:scale-[0.97]', b.primary && 'px-5 shadow-sm', !b.primary && 'text-foreground/85 hover:bg-muted', b.a === 'share_whatsapp' && 'ml-auto')}
@@ -91,6 +94,7 @@ export function TicketDetail({ t }: { t: Ticket }) {
           <Button variant="ghost" className="h-11 gap-2 rounded-xl px-4 text-[14px] font-semibold text-foreground/85 hover:bg-muted" onClick={() => guard() && setEditing(true)} data-testid="button-edit-ticket"><Pencil className="h-3.5 w-3.5" />Edit</Button>
         )}
       </div>
+      {!readOnly && <ReminderNote t={t} />}
       {readOnly && <p className="mt-3 text-[13px] text-muted-foreground" data-testid="text-read-only">You can read this ticket, but only its asker, owner, watchers and admins can act on it.</p>}
 
       {t.isBlocked && (
@@ -173,10 +177,11 @@ function AttachmentList({ items }: { items: Attachment[] }) {
 }
 
 const ACT_TEXT: Record<string, string> = {
+  overdue_manual: 'sent an in-app overdue reminder', overdue_system: 'posted an automatic overdue reminder',
   created: 'created this', accept: 'accepted', accepted: 'accepted', start: 'started work', started: 'started work', done: 'marked it done', close: 'confirmed and closed', closed: 'confirmed and closed',
   reopen: 'reopened', reopened: 'reopened', decline: 'declined', declined: 'declined', cancel: 'cancelled', cancelled: 'cancelled', block: 'marked it blocked', blocked: 'marked it blocked',
   unblock: 'unblocked', unblocked: 'unblocked', nudge: 'nudged the owner', nudged: 'nudged the owner', share_whatsapp: 'shared it on WhatsApp', request_extension: 'asked for more time',
-  approve_extension: 'approved the new date', decline_extension: 'declined the extension', undo: 'undid the last step', due_changed: 'moved the due date', reassigned: 'reassigned', edited: 'edited the details',
+  approve_extension: 'approved the new date', overdue_reminder: 'sent an in-app overdue reminder', overdue_reminder_manual: 'sent an in-app overdue reminder', overdue_reminder_auto: 'posted an automatic overdue reminder', overdue_reminder_system: 'posted an automatic overdue reminder', reminder_sent: 'sent an in-app overdue reminder', decline_extension: 'declined the extension', undo: 'undid the last step', due_changed: 'moved the due date', reassigned: 'reassigned', edited: 'edited the details',
 };
 
 function Timeline({ t, canComment }: { t: Ticket; canComment: boolean }) {

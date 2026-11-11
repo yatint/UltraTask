@@ -4,13 +4,24 @@ Invitation-only internal task tracking for Ultramotiv's rehabilitation robotics 
 
 ## Product and scope
 
-- Build Phase 1 first; stop for approval before Phase 2.
+- Build Phase 1 first; later-phase additions require the user's explicit approval.
 - One company, one team, one owner and a required due date per task.
 - The assignee marks work done; the creator or an admin confirms and closes it.
 - Personal tasks skip acceptance and move from open to in progress to closed.
 - Audit history is append-only. There is no comment deletion.
-- Phase 2 (not implemented): scheduled reminders, email digests, web push,
-  escalations, reporting dashboard, CSV export and holidays.
+- The user explicitly approved overdue reminders and a lifetime Team snapshot.
+  Other Phase 2 features remain deferred: digests, web push, escalations,
+  CSV export and holidays.
+- Reminder delivery is currently in-app only; the user dismissed the Resend
+  connection. Never report email as sent without a connected delivery provider.
+- System overdue alerts run once per task/deadline/owner per India calendar day.
+  They check every minute while the server runs and catch up on workspace loads.
+  Autoscale may sleep: do not promise continuous closed-app scheduling. Reliable
+  email/background schedules need a durable scheduler or always-running worker.
+- Snapshot uses all retained tasks, including old completions and inactive people.
+  Assignments are attributed to current/final owner. Completed means confirmed
+  closed, not awaiting check. Early is included in on-time; approval delays do not
+  make timely work late. Sample tasks are excluded from real totals by default.
 - Phase 3 is explicitly deferred until four weeks of real use.
 - The uploaded UltraTask brief is the detailed requirements source.
 

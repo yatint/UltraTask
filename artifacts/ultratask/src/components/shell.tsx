@@ -3,7 +3,7 @@ import type { Ticket } from '@workspace/api-client-react';
 import { Link } from 'wouter';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useClerk } from '@clerk/react';
-import { Bell, Inbox, Hourglass, LayoutGrid, Settings2, Plus, LogOut, LogIn, Keyboard, Eye, Search } from 'lucide-react';
+import { Bell, Inbox, Hourglass, LayoutGrid, Settings2, Plus, LogOut, LogIn, Keyboard, Eye, Search, Gauge } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -23,11 +23,12 @@ export function useCounts() {
   return { mine, waiting };
 }
 
-const NAV: { v: View; label: string; icon: typeof Inbox; href: string; admin?: boolean }[] = [
-  { v: 'tasks', label: 'My tasks', icon: Inbox, href: '/tasks' },
-  { v: 'waiting', label: 'Waiting on', icon: Hourglass, href: '/waiting' },
-  { v: 'team', label: 'Team', icon: LayoutGrid, href: '/team', admin: true },
-  { v: 'settings', label: 'Settings', icon: Settings2, href: '/settings' },
+const NAV: { v: View; label: string; short: string; icon: typeof Inbox; href: string; admin?: boolean }[] = [
+  { v: 'tasks', label: 'My tasks', short: 'Tasks', icon: Inbox, href: '/tasks' },
+  { v: 'waiting', label: 'Waiting on', short: 'Waiting', icon: Hourglass, href: '/waiting' },
+  { v: 'team', label: 'Team', short: 'Team', icon: LayoutGrid, href: '/team', admin: true },
+  { v: 'snapshot', label: 'Snapshot', short: 'Snapshot', icon: Gauge, href: '/snapshot', admin: true },
+  { v: 'settings', label: 'Settings', short: 'Settings', icon: Settings2, href: '/settings' },
 ];
 
 function NavItem({ item, active, count, onDark }: { item: (typeof NAV)[number]; active: boolean; count?: number; onDark?: boolean }) {
@@ -124,7 +125,7 @@ export function Shell({ children }: { children: ReactNode }) {
       </div>
 
       <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/92 backdrop-blur-md md:hidden">
-        <div className="grid grid-cols-4 gap-1 px-2 pt-1.5">
+        <div className="grid gap-0.5 px-1.5 pt-1.5" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
           {items.map((n) => <MobileTab key={n.v} item={n} active={view === n.v} />)}
         </div>
       </nav>
@@ -138,8 +139,8 @@ export function Shell({ children }: { children: ReactNode }) {
 
 function MobileTab({ item, active }: { item: (typeof NAV)[number]; active: boolean }) {
   const { isPreview, go } = useWs();
-  const cls = cn('flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 text-[11.5px] font-medium transition-colors', active ? 'text-primary' : 'text-muted-foreground');
-  const inner = (<><item.icon className="h-5 w-5" />{item.label}</>);
+  const cls = cn('flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 text-[11px] font-medium transition-colors', active ? 'text-primary' : 'text-muted-foreground');
+  const inner = (<><item.icon className="h-5 w-5" /><span className="max-w-full truncate">{item.short}</span></>);
   return isPreview ? <button className={cls} onClick={() => go(item.v)} data-testid={`tab-${item.v}`}>{inner}</button> : <Link href={item.href} className={cls} data-testid={`tab-${item.v}`}>{inner}</Link>;
 }
 
@@ -152,6 +153,13 @@ function PreviewBanner() {
       <Link href="/sign-in" className="ml-auto inline-flex min-h-10 items-center whitespace-nowrap rounded-lg bg-foreground px-3.5 font-semibold text-background transition-transform active:scale-95" data-testid="link-banner-sign-in">Sign in</Link>
     </div>
   );
+}
+
+function sourceLabel(type: string): string | null {
+  const t = type.toLowerCase();
+  if (t.includes('overdue') || t.includes('reminder')) return /auto|system/.test(t) ? 'System · overdue' : 'Manual · overdue reminder';
+  if (t.includes('nudge')) return 'Nudge';
+  return null;
 }
 
 function Notifications() {
@@ -182,7 +190,7 @@ function Notifications() {
               <span className={cn('mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full', n.isRead ? 'bg-transparent' : 'bg-primary')} />
               <span className="min-w-0 flex-1">
                 <span className={cn('block text-[13px] leading-snug', n.isRead ? 'text-muted-foreground' : 'font-semibold text-foreground')}>{n.message}</span>
-                <span className="text-[11px] text-muted-foreground">{fmtAgo(n.createdAt)}</span>
+                <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">{sourceLabel(n.type) && <span className="rounded bg-muted px-1 py-px font-medium text-foreground/70" data-testid={`notification-source-${n.id}`}>{sourceLabel(n.type)}</span>}{fmtAgo(n.createdAt)}</span>
               </span>
             </button>
           ))}

@@ -12,6 +12,7 @@ import MyTasks from './my-tasks';
 import Waiting from './waiting';
 import Team from './team';
 import Settings from './settings';
+import Snapshot from './snapshot';
 import NotFound from './not-found';
 import { ErrorScreen, NoAccess, ShellSkeleton } from './states';
 
@@ -36,7 +37,7 @@ export default function LiveArea() {
   }
   if (!q.data) return <ShellSkeleton />;
   const seg = loc.split('/')[1] as View;
-  const view: View | null = ['tasks', 'waiting', 'team', 'settings'].includes(seg) ? seg : null;
+  const view: View | null = ['tasks', 'waiting', 'team', 'snapshot', 'settings'].includes(seg) ? seg : null;
 
   return (
     <WorkspaceProvider ws={q.data} isPreview={false} view={view} go={go} openTicket={openTicket} onBlocked={noop}>
@@ -45,6 +46,7 @@ export default function LiveArea() {
           <Route path="/tasks" component={MyTasks} />
           <Route path="/waiting" component={Waiting} />
           <Route path="/team" component={Team} />
+          <Route path="/snapshot" component={Snapshot} />
           <Route path="/settings" component={Settings} />
           <Route path="/tickets/:id" component={TicketPage} />
           <Route component={NotFound} />
