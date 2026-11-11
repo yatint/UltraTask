@@ -69,7 +69,7 @@ export function TicketDetail({ t }: { t: Ticket }) {
   const blockedOn = person(t.blockedOnUserId);
 
   return (
-    <div className="mx-auto w-full max-w-[1100px]" data-testid={`ticket-detail-${t.id}`}>
+    <div className="@container/ticket mx-auto w-full max-w-[1100px]" data-testid={`ticket-detail-${t.id}`}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-muted-foreground">
         <span className="rounded-md bg-muted px-2 py-0.5 font-code text-[12.5px] font-medium text-foreground" data-testid="text-ticket-code">{t.code}</span>
         <span className="inline-flex items-center gap-1.5 font-medium text-foreground"><StatusIcon status={t.status} className="h-4 w-4" />{STATUS_LABEL[t.status]}</span>
@@ -116,7 +116,7 @@ export function TicketDetail({ t }: { t: Ticket }) {
         </div>
       )}
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_280px]">
+      <div className="mt-8 grid gap-8 @min-[640px]/ticket:grid-cols-[minmax(0,1fr)_280px]" data-testid="ticket-detail-layout">
         <div className="min-w-0 space-y-8">
           <section>
             <Label>Brief</Label>
@@ -126,7 +126,7 @@ export function TicketDetail({ t }: { t: Ticket }) {
           </section>
           <Timeline t={t} canComment={!readOnly} />
         </div>
-        <aside className="order-first self-start rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border lg:order-none lg:sticky lg:top-20" aria-label="Details">
+        <aside className="order-first min-w-0 self-start rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border @min-[640px]/ticket:order-none @min-[640px]/ticket:sticky @min-[640px]/ticket:top-20" aria-label="Details">
           <div className="mb-1 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">Details</div>
           <div className="divide-y divide-border/60">
           <Prop k="Owner"><Avatar p={assignee} size={20} /><span data-testid="text-assignee">{assignee?.name}</span></Prop>
