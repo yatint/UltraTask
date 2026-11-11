@@ -91,7 +91,11 @@ export function CreateTicketDialog() {
   const go = () => {
     if (pending || uploading) return;
     setTried(true);
-    if (!title.trim() || !assignee[0] || !due) return;
+    if (!title.trim()) {
+      titleRef.current?.focus();
+      return;
+    }
+    if (!assignee[0] || !due) return;
     submit({ title: title.trim(), description: desc, assigneeId: assignee[0], dueAt: due, priority, projectTagId: tag, watcherIds: watchers, attachments: files }, () => {
       if (another) { reset(true); setTimeout(() => titleRef.current?.focus(), 30); }
       else { reset(false); setOpen(false); }
@@ -113,14 +117,21 @@ export function CreateTicketDialog() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[92dvh] gap-0 overflow-y-auto p-0 sm:max-w-[620px]" onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); go(); } }}>
           <DialogHeader className="border-b border-border px-6 pb-4 pt-5">
-            <DialogTitle className="font-display text-2xl">A new ask</DialogTitle>
+            <DialogTitle className="font-display text-2xl">New task</DialogTitle>
             <DialogDescription>One owner. One date. You confirm when it's done.</DialogDescription>
           </DialogHeader>
           <div className="space-y-5 px-6 py-5">
-            <input ref={titleRef} autoFocus value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} data-testid="input-title" aria-label="Task title" aria-required="true" aria-invalid={tried && !title.trim()}
-              placeholder="What needs to happen?" className="w-full border-0 bg-transparent text-xl font-medium outline-none placeholder:text-muted-foreground/60" />
-            <textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} data-testid="input-description" placeholder="Context, links, acceptance — optional"
-              className="w-full resize-none rounded-lg border border-input bg-paper p-3 text-sm outline-none focus:border-primary/50" />
+            <div className="space-y-2">
+              <label htmlFor="new-task-title" className="block text-sm font-semibold text-foreground">Task title <span className="text-signal" aria-hidden="true">*</span></label>
+              <input id="new-task-title" ref={titleRef} autoFocus value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} data-testid="input-title" aria-required="true" aria-invalid={tried && !title.trim()} aria-describedby="new-task-title-hint"
+                placeholder="e.g. Kneesy Health Meeting" className={`h-12 w-full rounded-lg border bg-paper px-3 text-base font-medium outline-none transition-shadow placeholder:font-normal placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 ${tried && !title.trim() ? 'border-signal' : 'border-input'}`} />
+              <p id="new-task-title-hint" className="text-xs text-muted-foreground">A short name for the task. Add any extra details below.</p>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="new-task-description" className="block text-sm font-semibold text-foreground">Description <span className="font-normal text-muted-foreground">(optional)</span></label>
+              <textarea id="new-task-description" value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} data-testid="input-description" placeholder="Add context, links, or what needs to be done"
+                className="w-full resize-none rounded-lg border border-input bg-paper p-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Owner" req><PersonPicker value={assignee} onChange={setAssignee} testId="picker-assignee" /></Field>
               <Field label="Project"><TagSelect value={tag} onChange={setTag} /></Field>
