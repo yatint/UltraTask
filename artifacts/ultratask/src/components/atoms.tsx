@@ -3,19 +3,36 @@ import { cn } from '@/lib/utils';
 import { assetUrl, useWs } from '@/lib/workspace';
 import { fmtDateTime, health, type HealthKey } from '@/lib/time';
 
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+/** Actual Ultramotiv mark, cropped from the source logo pixels (square, contain). */
 export function HexMark({ className }: { className?: string }) {
+  return <img src={`${BASE}/ultratask-mark.png`} alt="" aria-hidden className={cn('object-contain', className)} />;
+}
+
+/**
+ * UltraTask product name + real Ultramotiv endorsement.
+ * stack: full original lockup (658x186) at >=200px wide so the white letters are ~11px tall.
+ * inline: original wordmark pixels only (cropped, 13:1), letters 12px tall. Always on a dark surface.
+ */
+export function Brand({ variant = 'stack', className }: { variant?: 'stack' | 'inline'; className?: string }) {
+  if (variant === 'inline') {
+    return (
+      <span className={cn('inline-flex items-center gap-2.5 rounded-xl bg-sidebar px-3 py-2 leading-none', className)} data-testid="brand">
+        <span className="brand-word text-[17px] text-sidebar-accent-foreground">Ultra<span className="text-sidebar-primary">Task</span></span>
+        <span className="text-[12px] font-medium text-sidebar-foreground/80">by</span>
+        <img src={`${BASE}/ultramotiv-wordmark.png`} alt="Ultramotiv" width={156} height={12} style={{ height: 12, width: 'auto' }} className="object-contain" />
+      </span>
+    );
+  }
   return (
-    <svg viewBox="0 0 64 64" className={className} aria-hidden>
-      <defs>
-        <linearGradient id="hx" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#2FB3BE" />
-          <stop offset="1" stopColor="#13707A" />
-        </linearGradient>
-      </defs>
-      <path d="M32 3 57 17.5v29L32 61 7 46.5v-29Z" fill="url(#hx)" />
-      <path d="M19 21h18l-10 14h12" fill="none" stroke="#F4F1EA" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round" />
-      <path d="M41 21v13a8 8 0 0 1-8 8h-6" fill="none" stroke="#F4F1EA" strokeWidth="5" strokeLinecap="round" opacity=".9" />
-    </svg>
+    <span className={cn('inline-flex flex-col gap-2 leading-none', className)} data-testid="brand">
+      <span className="brand-word text-[28px] text-sidebar-accent-foreground">Ultra<span className="text-sidebar-primary">Task</span></span>
+      <span className="inline-flex items-center gap-2.5">
+        <span className="text-[12px] font-medium text-sidebar-foreground/80">by</span>
+        <img src={`${BASE}/ultramotiv-logo.png`} alt="Ultramotiv" width={180} height={51} style={{ width: 180, height: 'auto' }} className="object-contain" />
+      </span>
+    </span>
   );
 }
 
@@ -79,32 +96,23 @@ export function PriorityGlyph({ p, className }: { p: string; className?: string 
 }
 
 const HEALTH_STYLE: Record<HealthKey, string> = {
-  overdue: 'text-signal bg-signal/8 ring-signal/25',
-  today: 'text-amber bg-amber/10 ring-amber/25',
-  soon: 'text-amber bg-transparent ring-amber/25',
-  on_track: 'text-ok bg-ok/5 ring-ok/25',
-  blocked: 'text-violet bg-violet/8 ring-violet/25',
-  awaiting: 'text-check bg-check/8 ring-check/25',
-  closed: 'text-muted-foreground bg-muted ring-transparent',
-  ended: 'text-muted-foreground bg-muted ring-transparent',
+  overdue: 'text-signal', today: 'text-amber', soon: 'text-amber', on_track: 'text-ok', blocked: 'text-violet', awaiting: 'text-check', closed: 'text-muted-foreground', ended: 'text-muted-foreground',
 };
 export const HEALTH_BORDER: Record<HealthKey, string> = {
   overdue: 'bg-signal', today: 'bg-amber', soon: 'bg-amber/60', on_track: 'bg-ok', blocked: 'bg-violet', awaiting: 'bg-check', closed: 'bg-muted-foreground/30', ended: 'bg-muted-foreground/20',
 };
-const HEALTH_GLYPH: Record<HealthKey, string> = { overdue: '▲', today: '◆', soon: '◇', on_track: '○', blocked: '■', awaiting: '◐', closed: '●', ended: '–' };
-
 export function HealthLabel({ t, compact }: { t: Ticket; compact?: boolean }) {
   const h = health(t);
   return (
-    <span data-testid={`health-${t.id}`} className={cn('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset', HEALTH_STYLE[h.key])}>
-      <span aria-hidden className="text-[8px]">{HEALTH_GLYPH[h.key]}</span>
+    <span data-testid={`health-${t.id}`} className={cn('inline-flex items-center gap-1.5 whitespace-nowrap text-[12.5px] font-semibold', HEALTH_STYLE[h.key])}>
+      <span aria-hidden className={cn('h-2 w-2 shrink-0 rounded-full', HEALTH_BORDER[h.key])} />
       {compact ? h.label.replace('On track · ', '') : h.label}
     </span>
   );
 }
 
 export function Chip({ children, className, title }: { children: React.ReactNode; className?: string; title?: string }) {
-  return <span title={title} className={cn('inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-border bg-paper px-1.5 py-px text-[10.5px] font-medium text-muted-foreground', className)}>{children}</span>;
+  return <span title={title} className={cn('inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-muted px-1.5 py-0.5 text-[12px] font-medium text-foreground/70', className)}>{children}</span>;
 }
 
 export function TicketFlags({ t }: { t: Ticket }) {
@@ -122,7 +130,7 @@ export function TagPill({ id }: { id?: number | null }) {
   const tag = id ? tags.get(id) : undefined;
   if (!tag) return null;
   return (
-    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[11.5px] text-muted-foreground">
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12.5px] text-foreground/75">
       <span className="h-2 w-2 rotate-45 rounded-[2px]" style={{ background: tag.colour }} />
       {tag.name}
     </span>

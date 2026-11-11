@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&family=Geist+Mono:wght@400..600&display=swap');
 @layer theme, base, clerk, components, utilities;
 @import 'tailwindcss';
 @import 'tw-animate-css';
@@ -73,12 +73,12 @@
   --elevate-1: rgba(16, 52, 58, 0.035);
   --elevate-2: rgba(16, 52, 58, 0.08);
 
-  --background: 42 22% 95.5%;
-  --paper: 42 30% 98%;
+  --background: 190 20% 96%;
+  --paper: 190 25% 98.5%;
   --foreground: 193 32% 11%;
   --ink: 193 40% 9%;
   --border: 38 14% 86%;
-  --card: 42 30% 98.5%;
+  --card: 190 30% 99%;
   --card-foreground: 193 32% 11%;
   --card-border: 38 14% 87%;
   --sidebar: 193 38% 9.5%;
@@ -97,12 +97,12 @@
   --secondary: 40 16% 90%;
   --secondary-foreground: 193 32% 14%;
   --muted: 40 16% 91.5%;
-  --muted-foreground: 193 9% 40%;
+  --muted-foreground: 193 12% 34%;
   --accent: 184 38% 90%;
   --accent-foreground: 188 60% 20%;
   --destructive: 10 72% 47%;
   --destructive-foreground: 42 40% 97%;
-  --signal: 10 76% 48%;
+  --signal: 6 78% 50%;
   --amber: 34 88% 40%;
   --violet: 268 45% 50%;
   --check: 212 70% 46%;
@@ -115,8 +115,8 @@
   --chart-4: 193 30% 30%;
   --chart-5: 150 30% 40%;
 
-  --app-font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
-  --app-font-serif: 'Instrument Serif', Georgia, serif;
+  --app-font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --app-font-serif: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   --app-font-mono: 'Geist Mono', ui-monospace, monospace;
   --radius: 0.625rem;
   --shadow-2xs: 0 1px 0 0 hsl(193 30% 20% / 0.04);
@@ -189,7 +189,7 @@
   html { -webkit-tap-highlight-color: transparent; }
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    font-feature-settings: 'ss01', 'cv11';
+    font-feature-settings: 'cv11';
     text-rendering: optimizeLegibility;
   }
   ::selection { background: hsl(var(--primary) / 0.18); }
@@ -207,7 +207,8 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-.font-display { font-family: var(--app-font-serif); font-weight: 400; letter-spacing: -0.01em; }
+.font-display { font-family: var(--app-font-sans); font-weight: 700; letter-spacing: -0.025em; }
+.brand-word { font-family: var(--app-font-sans); font-weight: 800; letter-spacing: -0.035em; }
 .font-code { font-family: var(--app-font-mono); font-feature-settings: 'zero'; }
 .hairline { box-shadow: inset 0 0 0 1px hsl(var(--border)); }
 .stripes {

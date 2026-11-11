@@ -49,7 +49,7 @@ export function Tour() {
         <div className="px-6 pb-6 pt-5">
           <div className="mb-4 flex gap-1.5">{STEPS.map((_, j) => <motion.span key={j} className="h-1 flex-1 rounded-full bg-muted" animate={{ backgroundColor: j <= i ? 'hsl(186 70% 31%)' : 'hsl(40 16% 91.5%)' }} />)}</div>
           <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-primary">{s.kicker}</div>
-          <DialogTitle className="mt-1 font-display text-[30px] leading-tight">{s.title}</DialogTitle>
+          <DialogTitle className="mt-1 font-display text-2xl leading-tight">{s.title}</DialogTitle>
           <DialogDescription className="mt-2 text-[14.5px] leading-relaxed">{s.body}</DialogDescription>
           <div className="mt-6 flex items-center">
             <button onClick={finish} className="text-sm text-muted-foreground hover:text-foreground" data-testid="button-tour-skip">Skip</button>

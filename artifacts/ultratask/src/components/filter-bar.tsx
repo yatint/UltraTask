@@ -29,17 +29,17 @@ export function FilterBar({ f, setF, hide = [] }: { f: Filters; setF: (f: Filter
   const people = ws.users.filter((u) => u.isActive);
 
   return (
-    <div className="flex flex-wrap items-center gap-2" data-testid="filter-bar">
-      <div className="group flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border border-border bg-card pl-4 pr-1.5 shadow-xs transition-shadow focus-within:border-primary/40 focus-within:shadow-md sm:max-w-md">
+    <div className="flex items-center gap-2" data-testid="filter-bar">
+      <div className="group flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl bg-card pl-3.5 pr-1.5 ring-1 ring-border transition-shadow focus-within:ring-2 focus-within:ring-primary/50">
         <Search className="h-4 w-4 text-muted-foreground" />
         <input ref={ref} value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} data-testid="input-search"
-          placeholder="Search UM-142, titles, notes, comments" className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/70" />
-        {f.q ? <button onClick={() => setF({ ...f, q: '' })} className="rounded-full p-1 hover:bg-muted" aria-label="Clear search"><X className="h-3.5 w-3.5" /></button> : <span className="hidden sm:block"><Kbd>/</Kbd></span>}
+          placeholder="Filter this list" aria-label="Filter this list by code, title, notes or comments" className="h-full min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground" />
+        {f.q ? <button onClick={() => setF({ ...f, q: '' })} className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-muted" aria-label="Clear search"><X className="h-3.5 w-3.5" /></button> : <span className="hidden sm:block"><Kbd>/</Kbd></span>}
       </div>
       <Popover>
         <PopoverTrigger asChild>
-          <button data-testid="button-filters" className={cn('flex h-10 items-center gap-2 rounded-full border px-4 text-sm shadow-xs transition-all active:scale-[0.97]', n ? 'border-foreground bg-foreground text-background' : 'border-border bg-card hover:border-foreground/30')}>
-            <SlidersHorizontal className="h-4 w-4" /> Filters {n > 0 && <span className="font-code text-xs">{n}</span>}
+          <button data-testid="button-filters" className={cn('flex h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-[14px] font-medium transition-all active:scale-[0.97] sm:px-4', n ? 'bg-foreground text-background' : 'bg-card ring-1 ring-border hover:ring-foreground/30')}>
+            <SlidersHorizontal className="h-4 w-4" /><span className="hidden sm:inline">Filters</span>{n > 0 && <span className="font-code text-xs">{n}</span>}<span className="sr-only">Filters</span>
           </button>
         </PopoverTrigger>
         <PopoverContent align="start" className="max-h-[70dvh] w-[min(92vw,440px)] overflow-y-auto rounded-2xl p-0">
@@ -60,14 +60,14 @@ export function FilterBar({ f, setF, hide = [] }: { f: Filters; setF: (f: Filter
             </div>
           </div>
           <div className="sticky bottom-0 flex items-center justify-between border-t border-border bg-popover px-5 py-3">
-            <button className="text-sm font-medium underline underline-offset-4" onClick={() => setF({ ...EMPTY, q: f.q, sort: f.sort })} data-testid="button-clear-filters">Clear all</button>
+            <button className="min-h-10 rounded-lg px-2 text-sm font-semibold text-primary hover:bg-accent" onClick={() => setF({ ...EMPTY, q: f.q, sort: f.sort })} data-testid="button-clear-filters">Clear all</button>
             <span className="text-xs text-muted-foreground">Remembered for this screen</span>
           </div>
         </PopoverContent>
       </Popover>
-      <label className="flex h-10 items-center gap-1.5 rounded-full border border-border bg-card pl-3 pr-1 text-sm shadow-xs">
+      <label className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-card pl-3 pr-1 text-[14px] font-medium ring-1 ring-border"><span className="sr-only">Sort</span>
         <ArrowDownUp className="h-3.5 w-3.5 text-muted-foreground" />
-        <select value={f.sort} onChange={(e) => setF({ ...f, sort: e.target.value as SortKey })} className="h-full bg-transparent pr-2 outline-none" data-testid="select-sort">
+        <select value={f.sort} onChange={(e) => setF({ ...f, sort: e.target.value as SortKey })} className="h-full max-w-[7.5rem] bg-transparent pr-1 outline-none sm:max-w-none" data-testid="select-sort">
           <option value="due">Due soonest</option>
           <option value="priority">Priority</option>
           <option value="created">Newest</option>
@@ -81,14 +81,14 @@ export function FilterBar({ f, setF, hide = [] }: { f: Filters; setF: (f: Filter
 function Sec({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{title}</div>
+      <div className="mb-2 text-[12px] font-semibold text-foreground">{title}</div>
       <div className="flex flex-wrap gap-1.5">{children}</div>
     </div>
   );
 }
 function Pill({ on, onClick, children, id }: { on: boolean; onClick: () => void; children: React.ReactNode; id: string }) {
   return (
-    <button onClick={onClick} data-testid={`filter-${id}`} className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-all active:scale-95', on ? 'border-foreground bg-foreground text-background' : 'border-border hover:border-foreground/40')}>
+    <button onClick={onClick} data-testid={`filter-${id}`} className={cn('inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium transition-all active:scale-95', on ? 'bg-foreground text-background' : 'bg-muted/70 text-foreground hover:bg-muted')}>
       {children}
     </button>
   );
@@ -96,10 +96,10 @@ function Pill({ on, onClick, children, id }: { on: boolean; onClick: () => void;
 function Range({ title, from, to, set, id }: { title: string; from: string; to: string; set: (a: string, b: string) => void; id: string }) {
   return (
     <div>
-      <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{title}</div>
+      <div className="mb-2 text-[12px] font-semibold text-foreground">{title}</div>
       <div className="space-y-1.5">
-        <input type="date" value={from} onChange={(e) => set(e.target.value, to)} data-testid={`input-${id}-from`} className="h-8 w-full rounded-md border border-input bg-paper px-2 text-xs" />
-        <input type="date" value={to} onChange={(e) => set(from, e.target.value)} data-testid={`input-${id}-to`} className="h-8 w-full rounded-md border border-input bg-paper px-2 text-xs" />
+        <input type="date" value={from} onChange={(e) => set(e.target.value, to)} data-testid={`input-${id}-from`} className="h-10 w-full rounded-lg border border-input bg-paper px-2 text-[13px]" />
+        <input type="date" value={to} onChange={(e) => set(from, e.target.value)} data-testid={`input-${id}-to`} className="h-10 w-full rounded-lg border border-input bg-paper px-2 text-[13px]" />
       </div>
     </div>
   );

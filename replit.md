@@ -62,7 +62,11 @@ Invitation-only internal task tracking for Ultramotiv's rehabilitation robotics 
 
 ## Design direction
 
-- The supplied Ultramotiv logo is the brand asset.
+- Brand the product as **UltraTask by Ultramotiv**, using the supplied Ultramotiv
+  logo at its original aspect ratio, not a recreated or stretched symbol.
+- The user rejected the initial serif/editorial typography and basic visual design.
+  Use readable sans-serif typography throughout; prioritize the task workspace over
+  a large introductory banner, especially on mobile.
 - User benchmarks: Apple animation, Duolingo onboarding, Linear UI, Pentagram type,
   Muji minimalism, Airbnb search, Aesop art direction, Notion dashboards,
   Stripe landing pages and Framer micro-interactions.

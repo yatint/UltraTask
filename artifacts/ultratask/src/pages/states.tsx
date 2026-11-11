@@ -22,7 +22,7 @@ export function NoAccess() {
   const { user } = useUser();
   return (
     <Frame>
-      <h1 className="mt-6 font-display text-[40px] leading-none" data-testid="text-no-access">Ask your admin for an invite</h1>
+      <h1 className="mt-6 font-display text-[30px] leading-tight" data-testid="text-no-access">Ask your admin for an invite</h1>
       <p className="mt-3 text-[15px] text-muted-foreground">
         You're signed in as <span className="font-medium text-foreground">{user?.primaryEmailAddress?.emailAddress ?? 'this account'}</span>, but UltraTask is invitation-only and this email isn't on the Ultramotiv team yet.
       </p>
@@ -37,7 +37,7 @@ export function NoAccess() {
 export function ErrorScreen({ message, retry }: { message: string; retry: () => void }) {
   return (
     <Frame>
-      <h1 className="mt-6 font-display text-[40px] leading-none">The line went quiet</h1>
+      <h1 className="mt-6 font-display text-[30px] leading-tight">The line went quiet</h1>
       <p className="mt-3 text-sm text-muted-foreground" data-testid="text-error">{message}</p>
       <Button className="mt-8 rounded-full px-6" onClick={retry} data-testid="button-retry">Try again</Button>
     </Frame>

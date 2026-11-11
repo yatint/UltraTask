@@ -64,18 +64,22 @@ export default function MyTasks() {
         <span data-testid="text-summary">
           {data.counts.all} open{data.counts.overdue > 0 && <> · <span className="text-signal">{data.counts.overdue} overdue</span></>}{next && <> · next due {fmtDue(next.dueAt)}</>}
         </span>} />
-      <div className="space-y-4">
+      <div className="space-y-3">
         <QuickAdd defaultMe />
-        <div className="scrollbar-thin -mx-4 flex gap-1.5 overflow-x-auto px-4 md:mx-0 md:px-0" role="tablist">
-          {CHIPS.map(([k, l]) => (
-            <button key={k} role="tab" aria-selected={chip === k} onClick={() => setChip(k)} data-testid={`chip-count-${k}`}
-              className={cn('relative flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-[13px] transition-colors',
-                chip === k ? 'border-foreground text-background' : 'border-border bg-card text-muted-foreground hover:text-foreground')}>
-              {chip === k && <motion.span layoutId="count-chip" className="absolute inset-0 rounded-full bg-foreground" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
-              <span className="relative">{l}</span>
-              <span className={cn('relative font-code text-[11px]', k === 'overdue' && data.counts.overdue > 0 && chip !== k && 'text-signal')}>{data.counts[k]}</span>
-            </button>
-          ))}
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-5" role="tablist" aria-label="Show tasks">
+          {CHIPS.map(([k, l]) => {
+            const on = chip === k;
+            const hot = k === 'overdue' && data.counts.overdue > 0;
+            return (
+              <button key={k} role="tab" aria-selected={on} onClick={() => setChip(k)} data-testid={`chip-count-${k}`}
+                className={cn('relative flex min-h-[64px] flex-col items-start justify-between rounded-xl px-3 py-2.5 text-left transition-colors',
+                  on ? 'text-background' : 'bg-card text-foreground shadow-xs ring-1 ring-border hover:ring-foreground/25')}>
+                {on && <motion.span layoutId="count-chip" className="absolute inset-0 rounded-xl bg-foreground" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
+                <span className={cn('relative font-code text-[22px] font-semibold leading-none tabular-nums', !on && hot && 'text-signal')}>{data.counts[k]}</span>
+                <span className={cn('relative text-[12.5px] font-medium leading-tight', on ? 'text-background/80' : 'text-muted-foreground')}>{l}</span>
+              </button>
+            );
+          })}
         </div>
         <FilterBar f={f} setF={setF} hide={['assignees']} />
         {data.blocking.length > 0 && g('You are blocking others', data.blocking, { tone: 'violet', hint: 'Someone marked their work as waiting on you', perspective: 'any' })}
@@ -83,7 +87,7 @@ export default function MyTasks() {
           activeCount(f) || f.q || chip !== 'all' ? <EmptyState art="search" title="Nothing here" body="Try another count chip, loosen a filter, or clear the search. Your choices are remembered." />
             : <EmptyState title="A clear desk" body="Nothing is assigned to you. When someone asks, it lands here with one date and one finish line." />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {g('Overdue', data.overdue, { tone: 'signal', hint: 'Oldest first — finish, ask for time, or mark blocked' })}
             {g('Due today', data.dueToday, { tone: 'amber' })}
             {g('Not accepted', data.notAccepted, { hint: 'Accept or decline — the asker is waiting to hear' })}

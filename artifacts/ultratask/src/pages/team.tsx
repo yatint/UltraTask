@@ -37,10 +37,10 @@ export default function Team() {
     <div className="mx-auto max-w-[1400px]">
       <PageHeader title="Team" sub={<span data-testid="text-summary">{active.length} open across {ws.users.filter((u) => u.isActive).length} people · <span className="text-signal">{overdue} overdue</span> · {awaiting} awaiting a check</span>}
         right={
-          <div className="relative inline-flex rounded-full border border-border bg-card p-1 shadow-xs">
+          <div className="relative inline-flex rounded-xl bg-card p-1 ring-1 ring-border">
             {(['people', 'kanban'] as const).map((m) => (
-              <button key={m} onClick={() => setM(m)} className={cn('relative rounded-full px-4 py-1.5 text-[13px] capitalize transition-colors', mode === m ? 'text-background' : 'text-muted-foreground hover:text-foreground')} data-testid={`toggle-${m}`}>
-                {mode === m && <motion.span layoutId="team-mode" className="absolute inset-0 rounded-full bg-foreground" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
+              <button key={m} onClick={() => setM(m)} className={cn('relative min-h-10 rounded-lg px-4 text-[14px] font-medium capitalize transition-colors', mode === m ? 'text-background' : 'text-muted-foreground hover:text-foreground')} data-testid={`toggle-${m}`}>
+                {mode === m && <motion.span layoutId="team-mode" className="absolute inset-0 rounded-lg bg-foreground" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
                 <span className="relative">{m === 'people' ? 'By person' : 'Kanban'}</span>
               </button>
             ))}
@@ -62,23 +62,23 @@ function People({ list, sel, setSel }: { list: Ticket[]; sel: number | null; set
   const max = Math.max(1, ...people.map((p) => p.act));
   if (!list.length) return <EmptyState art="search" title="Nothing matches" body="Clear a filter to see the board again." />;
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
+    <div className="space-y-3">
       {people.map(({ u, ts, over, act, na, blk, chk }, i) => (
-        <motion.section key={u.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="overflow-hidden rounded-xl border border-border bg-card shadow-xs" data-testid={`card-person-${u.id}`}>
-          <header className="flex items-center gap-3 border-b border-border/70 px-5 py-3.5">
+        <motion.section key={u.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border" data-testid={`card-person-${u.id}`}>
+          <header className="flex flex-wrap items-center gap-3 border-b border-border/70 px-4 py-4 md:px-5">
             <Avatar p={u} size={34} />
             <div className="min-w-0">
-              <div className="truncate text-[14px] font-semibold">{u.name}</div>
-              <div className="truncate text-[12px] text-muted-foreground">{u.designation}</div>
+              <div className="truncate text-[15px] font-bold tracking-[-0.01em]">{u.name}</div>
+              <div className="truncate text-[13px] text-muted-foreground">{u.designation}</div>
             </div>
-            <div className="ml-auto grid grid-cols-3 gap-x-4 gap-y-1 text-right sm:flex sm:items-center">
+            <div className="grid w-full grid-cols-5 gap-x-2 sm:ml-auto sm:flex sm:w-auto sm:gap-x-5">
               <Stat n={act} l="open" /><Stat n={over} l="overdue" tone={over ? 'text-signal' : ''} /><Stat n={na} l="not accepted" /><Stat n={blk} l="blocked" tone={blk ? 'text-violet' : ''} /><Stat n={chk} l="to check" tone={chk ? 'text-check' : ''} />
             </div>
           </header>
           <div className="h-1 bg-muted"><motion.div initial={{ scaleX: 0 }} animate={{ scaleX: act / max }} style={{ originX: 0 }} transition={{ duration: 0.6, ease: [0.2, 0.8, 0.2, 1] }} className={cn('h-full', over ? 'bg-signal/70' : 'bg-primary/60')} /></div>
           {ts.length === 0 ? <p className="px-5 py-5 text-sm text-muted-foreground">Nothing on their plate.</p>
             : ts.slice(0, 6).map((t) => <TicketRow key={t.id} t={t} perspective="owner" selected={sel === t.id} onSelect={() => setSel(t.id)} />)}
-          {ts.length > 6 && <div className="px-5 py-2 text-xs text-muted-foreground">+{ts.length - 6} more</div>}
+          {ts.length > 6 && <div className="border-t border-border/60 px-5 py-2.5 text-[13px] text-muted-foreground">+{ts.length - 6} more for this person. Filter by owner to see them all.</div>}
         </motion.section>
       ))}
     </div>
@@ -86,7 +86,7 @@ function People({ list, sel, setSel }: { list: Ticket[]; sel: number | null; set
 }
 
 const Stat = ({ n, l, tone }: { n: number; l: string; tone?: string }) => (
-  <div><div className={cn('font-code text-[15px] tabular-nums', tone)}>{n}</div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">{l}</div></div>
+  <div className="min-w-[56px]"><div className={cn('font-code text-[18px] font-semibold leading-none tabular-nums', tone)}>{n}</div><div className="mt-1 text-[12px] text-muted-foreground">{l}</div></div>
 );
 
 type Col = (typeof COLS)[number];
@@ -115,27 +115,27 @@ function Kanban({ list }: { list: Ticket[] }) {
     run(t, { action: a });
   };
   return (
-    <div className="scrollbar-thin -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-4 md:mx-0 md:px-0">
+    <div className="scrollbar-thin -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-4 md:mx-0 md:px-0" tabIndex={0} aria-label="Status columns, scroll sideways for more">
       {COLS.map((c) => {
         const ts = list.filter((t) => t.status === c);
         return (
           <section key={c} onDragOver={(e) => { e.preventDefault(); setOver(c); }} onDragLeave={() => setOver((o) => (o === c ? null : o))} onDrop={(e) => drop(c, e)}
-            className={cn('w-[290px] shrink-0 snap-start rounded-xl bg-muted/60 p-2 ring-2 ring-transparent transition-colors', over === c && 'bg-accent/70 ring-primary/40')} data-testid={`column-${c}`}>
+            className={cn('w-[300px] shrink-0 snap-start rounded-2xl bg-muted/60 p-2 ring-2 ring-transparent transition-colors', over === c && 'bg-accent/70 ring-primary/40')} data-testid={`column-${c}`}>
             <div className="flex items-center gap-2 px-2 py-1.5">
               <StatusIcon status={c} /><span className="text-[13px] font-semibold">{STATUS_LABEL[c]}{c === 'closed' && <span className="font-normal text-muted-foreground"> · 7d</span>}</span>
-              <span className="ml-auto font-code text-[11px] text-muted-foreground">{ts.length}</span>
+              <span className="ml-auto rounded-md bg-card px-1.5 font-code text-[12px] font-medium">{ts.length}</span>
             </div>
             <div className="mt-1 space-y-2">
               {ts.map((t) => (
                 <button key={t.id} draggable onDragStart={(e) => { e.dataTransfer.setData('text/ticket', String(t.id)); e.dataTransfer.effectAllowed = 'move'; }} onClick={() => openTicket(t.id)}
-                  className="block w-full cursor-grab rounded-lg border border-border bg-card p-3 text-left shadow-xs transition-[box-shadow,transform] hover:-translate-y-0.5 hover:shadow-md active:cursor-grabbing" data-testid={`card-ticket-${t.id}`}>
-                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground"><PriorityGlyph p={t.priority} /><span className="font-code">{t.code}</span><span className="ml-auto"><Avatar p={person(t.assigneeId)} size={20} /></span></div>
-                  <div className="mt-1.5 line-clamp-2 text-[13.5px] font-medium leading-snug">{t.title}</div>
+                  className="block w-full cursor-grab rounded-xl bg-card p-3.5 ring-1 ring-border text-left shadow-xs transition-[box-shadow,transform] hover:-translate-y-0.5 hover:shadow-md active:cursor-grabbing" data-testid={`card-ticket-${t.id}`}>
+                  <div className="flex items-center gap-2 text-[12px] text-muted-foreground"><PriorityGlyph p={t.priority} /><span className="font-code">{t.code}</span><span className="ml-auto"><Avatar p={person(t.assigneeId)} size={20} /></span></div>
+                  <div className="mt-1.5 line-clamp-2 text-[14.5px] font-semibold leading-snug">{t.title}</div>
                   <div className="mt-2 flex flex-wrap items-center gap-1.5"><HealthLabel t={t} compact /><TagPill id={t.projectTagId} /><TicketFlags t={t} /></div>
-                  <div className="mt-2 text-[11px] text-muted-foreground">Due {fmtDue(t.dueAt)} · from {person(t.createdById)?.name}</div>
+                  <div className="mt-2 text-[12.5px] text-muted-foreground">Due {fmtDue(t.dueAt)} · from {person(t.createdById)?.name}</div>
                 </button>
               ))}
-              {ts.length === 0 && <div className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border py-6 text-xs text-muted-foreground"><Lock className="h-3 w-3 opacity-0" />Drop here</div>}
+              {ts.length === 0 && <div className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border py-6 text-[13px] text-muted-foreground"><Lock className="h-3 w-3 opacity-0" />Drop here</div>}
             </div>
           </section>
         );

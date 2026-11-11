@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { useWs, type View } from '@/lib/workspace';
 import { useOps } from '@/lib/ops';
 import { fmtAgo, isActive } from '@/lib/time';
-import { Avatar, HexMark, Kbd, STATUS_LABEL } from './atoms';
+import { Avatar, Brand, HexMark, Kbd, STATUS_LABEL } from './atoms';
 import { CreateTicketDialog, openNewTicket } from './create-ticket';
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -37,17 +37,17 @@ function NavItem({ item, active, count, onDark }: { item: (typeof NAV)[number]; 
       {active && <motion.span layoutId={onDark ? 'nav-pill' : 'nav-pill-m'} className={cn('absolute inset-0 rounded-lg', onDark ? 'bg-sidebar-accent' : 'bg-accent')} transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
       <item.icon className="relative h-4 w-4" />
       <span className="relative">{item.label}</span>
-      {count ? <span className="relative ml-auto font-code text-[11px] opacity-70">{count}</span> : null}
+      {count ? <span className="relative ml-auto rounded-md bg-sidebar-primary/15 px-1.5 font-code text-[12px] text-sidebar-primary">{count}</span> : null}
     </>
   );
-  const cls = cn('relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px] transition-colors',
+  const cls = cn('relative flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-[14px] font-medium transition-colors',
     onDark ? (active ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/75 hover:text-sidebar-accent-foreground') : '');
   if (isPreview) return <button onClick={() => go(item.v)} className={cn(cls, 'w-full text-left')} data-testid={`nav-${item.v}`}>{inner}</button>;
   return <Link href={item.href} className={cls} data-testid={`nav-${item.v}`}>{inner}</Link>;
 }
 
 export function Shell({ children }: { children: ReactNode }) {
-  const { view, isAdmin, isPreview, me, ws } = useWs();
+  const { view, isAdmin, isPreview, me, ws, go } = useWs();
   const counts = useCounts();
   const { signOut } = useClerk();
   const [keys, setKeys] = useState(false);
@@ -66,13 +66,12 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="grain flex min-h-[100dvh] bg-background">
-      <aside className="sticky top-0 hidden h-[100dvh] w-[244px] shrink-0 flex-col bg-sidebar px-3 pb-3 pt-5 text-sidebar-foreground md:flex">
+      <aside className="sticky top-0 hidden h-[100dvh] w-[256px] shrink-0 flex-col bg-sidebar px-3 pb-3 pt-5 text-sidebar-foreground md:flex">
         <div className="px-2">
-          <img src={`${basePath}/ultramotiv-logo.png`} alt="Ultramotiv" className="h-[22px] w-auto" />
-          <div className="mt-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-sidebar-foreground/50">UltraTask<span className="h-px flex-1 bg-sidebar-border" /></div>
+          <Brand className="w-full" />
         </div>
         <button onClick={openNewTicket} data-testid="button-new-ticket"
-          className="mt-6 flex items-center gap-2 rounded-lg bg-sidebar-primary px-3 py-2 text-[13.5px] font-medium text-sidebar-primary-foreground transition-transform hover:brightness-110 active:scale-[0.98]">
+          className="mt-7 flex min-h-11 items-center gap-2 rounded-xl bg-sidebar-primary px-3 py-2 text-[14px] font-semibold text-sidebar-primary-foreground transition-transform hover:brightness-110 active:scale-[0.98]">
           <Plus className="h-4 w-4" /> New ticket <span className="ml-auto rounded border border-sidebar-primary-foreground/25 px-1 font-code text-[10px]">N</span>
         </button>
         <nav className="mt-5 space-y-0.5">
@@ -89,22 +88,36 @@ export function Shell({ children }: { children: ReactNode }) {
               <div className="truncate text-[11px] text-sidebar-foreground/60">{isPreview ? 'Sample viewer' : `${me.designation} · ${me.role}`}</div>
             </div>
             {isPreview
-              ? <Link href="/sign-in" className="rounded-md p-1.5 text-sidebar-foreground/70 hover:bg-sidebar hover:text-white" aria-label="Sign in" data-testid="link-sidebar-sign-in"><LogIn className="h-4 w-4" /></Link>
-              : <button onClick={() => signOut({ redirectUrl: basePath || '/' })} className="rounded-md p-1.5 text-sidebar-foreground/70 hover:bg-sidebar hover:text-white" aria-label="Sign out" data-testid="button-sign-out"><LogOut className="h-4 w-4" /></button>}
+              ? <Link href="/sign-in" className="flex h-10 w-10 items-center justify-center rounded-md text-sidebar-foreground/70 hover:bg-sidebar hover:text-white" aria-label="Sign in" data-testid="link-sidebar-sign-in"><LogIn className="h-4 w-4" /></Link>
+              : <button onClick={() => signOut({ redirectUrl: basePath || '/' })} className="flex h-10 w-10 items-center justify-center rounded-md text-sidebar-foreground/70 hover:bg-sidebar hover:text-white" aria-label="Sign out" data-testid="button-sign-out"><LogOut className="h-4 w-4" /></button>}
           </div>
           <div className="px-2 text-[10.5px] text-sidebar-foreground/40">{ws.settings.companyName} · Pune · IST</div>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center justify-center bg-sidebar py-1 md:hidden"><Brand variant="inline" className="py-1.5" /></div>
         {isPreview && <PreviewBanner />}
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border/70 bg-background/85 px-4 backdrop-blur-md md:px-8">
-          <HexMark className="h-7 w-7 shrink-0 md:hidden" />
           <GlobalSearch />
           <div className="ml-auto flex items-center gap-1.5">
             <Notifications />
-            {!isPreview && <span className="md:hidden"><Avatar p={me} size={28} /></span>}
-            {isPreview && <Link href="/sign-in" className="rounded-full bg-foreground px-3.5 py-1.5 text-[13px] font-medium text-background md:hidden" data-testid="link-header-sign-in">Sign in</Link>}
+            <button onClick={openNewTicket} aria-label="New ticket" title="New ticket" data-testid="button-fab-new"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-transform active:scale-95 md:hidden">
+              <Plus className="h-5 w-5" />
+            </button>
+            {!isPreview && <Popover>
+              <PopoverTrigger asChild>
+                <button className="inline-flex h-11 w-11 items-center justify-center rounded-xl focus-visible:outline-2 focus-visible:outline-ring md:hidden" aria-label="Account menu" data-testid="button-mobile-account">
+                  <Avatar p={me} size={28} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-56 p-2">
+                <div className="border-b border-border px-2 py-2.5 text-sm font-semibold">{me.name}</div>
+                <button onClick={() => go('settings')} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-sm hover:bg-accent"><Settings2 className="h-4 w-4" />Settings</button>
+                <button onClick={() => signOut({ redirectUrl: basePath || '/' })} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-sm hover:bg-accent" data-testid="button-mobile-sign-out"><LogOut className="h-4 w-4" />Sign out</button>
+              </PopoverContent>
+            </Popover>}
           </div>
         </header>
         <main className="flex-1 px-4 pb-28 pt-6 md:px-8 md:pb-16 md:pt-8">{children}</main>
@@ -115,10 +128,6 @@ export function Shell({ children }: { children: ReactNode }) {
           {items.map((n) => <MobileTab key={n.v} item={n} active={view === n.v} />)}
         </div>
       </nav>
-      <button onClick={openNewTicket} aria-label="New ticket" data-testid="button-fab-new"
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95 md:hidden">
-        <Plus className="h-6 w-6" />
-      </button>
 
       <CreateTicketDialog />
       <ShortcutSheet open={keys} onOpenChange={setKeys} />
@@ -129,18 +138,18 @@ export function Shell({ children }: { children: ReactNode }) {
 
 function MobileTab({ item, active }: { item: (typeof NAV)[number]; active: boolean }) {
   const { isPreview, go } = useWs();
-  const cls = cn('flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10.5px] transition-colors', active ? 'text-primary' : 'text-muted-foreground');
+  const cls = cn('flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 text-[11.5px] font-medium transition-colors', active ? 'text-primary' : 'text-muted-foreground');
   const inner = (<><item.icon className="h-5 w-5" />{item.label}</>);
   return isPreview ? <button className={cls} onClick={() => go(item.v)} data-testid={`tab-${item.v}`}>{inner}</button> : <Link href={item.href} className={cls} data-testid={`tab-${item.v}`}>{inner}</Link>;
 }
 
 function PreviewBanner() {
+  const { me } = useWs();
   return (
-    <div className="relative z-40 flex items-center gap-3 border-b border-amber/25 bg-[hsl(42_60%_93%)] px-4 py-2 text-[12.5px] md:px-8" data-testid="banner-preview">
-      <span className="stripes inline-flex items-center gap-1.5 rounded-full border border-amber/40 px-2 py-0.5 font-code text-[10.5px] uppercase tracking-wider text-amber"><Eye className="h-3 w-3" />Sample data</span>
-      <span className="hidden text-foreground/75 sm:inline">You are exploring a read-only sample of the Ultramotiv workspace. Nothing you click here changes anything.</span>
-      <span className="text-foreground/75 sm:hidden">Read-only sample</span>
-      <Link href="/sign-in" className="ml-auto whitespace-nowrap rounded-full bg-foreground px-3 py-1 font-medium text-background transition-transform active:scale-95" data-testid="link-banner-sign-in">Sign in</Link>
+    <div className="relative z-40 flex items-center gap-3 border-b border-amber/25 bg-[hsl(40_70%_94%)] px-4 py-1.5 text-[13px] md:px-8" data-testid="banner-preview">
+      <Eye className="h-4 w-4 shrink-0 text-amber" />
+      <span className="min-w-0 text-foreground/85"><b className="font-semibold">Sample workspace, read-only.</b><span className="hidden sm:inline"> Viewing as {me.name.split(' ')[0]}. Every ask has one owner, one deadline, and is closed only by the person who asked.</span></span>
+      <Link href="/sign-in" className="ml-auto inline-flex min-h-10 items-center whitespace-nowrap rounded-lg bg-foreground px-3.5 font-semibold text-background transition-transform active:scale-95" data-testid="link-banner-sign-in">Sign in</Link>
     </div>
   );
 }
@@ -153,7 +162,7 @@ function Notifications() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Notifications" data-testid="button-notifications">
+        <button className="relative flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Notifications" data-testid="button-notifications">
           <Bell className="h-[18px] w-[18px]" />
           <AnimatePresence>{unread > 0 && <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-signal px-1 font-code text-[9.5px] text-white" data-testid="badge-unread">{unread}</motion.span>}</AnimatePresence>
         </button>
@@ -211,7 +220,7 @@ function GlobalSearch() {
   return (
     <div className="relative min-w-0 flex-1 md:max-w-md">
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <input ref={ref} value={q} placeholder="Search tickets and comments" data-testid="input-global-search"
+      <input ref={ref} value={q} placeholder="Search tickets and comments" aria-label="Search tickets and comments" data-testid="input-global-search"
         onChange={(e) => { setQ(e.target.value); setOpen(true); setI(0); }} onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)}
         onKeyDown={(e) => {
           if (e.key === 'ArrowDown') { e.preventDefault(); setI((x) => Math.min(x + 1, results.length - 1)); }
@@ -219,7 +228,7 @@ function GlobalSearch() {
           else if (e.key === 'Enter' && results[i]) pick(results[i].t.id);
           else if (e.key === 'Escape') { setOpen(false); ref.current?.blur(); }
         }}
-        className="h-9 w-full rounded-full border border-border bg-card pl-9 pr-12 text-[13.5px] outline-none transition-colors placeholder:text-muted-foreground focus:border-primary" />
+        className="h-11 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-[14px] shadow-xs outline-none transition-colors placeholder:text-muted-foreground focus:border-primary md:pr-12" />
       <span className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 font-code text-[10.5px] text-muted-foreground md:block">Ctrl K</span>
       <AnimatePresence>
         {open && q.trim().length >= 2 && (
@@ -244,7 +253,7 @@ function ShortcutSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
-        <DialogHeader><DialogTitle className="font-display text-2xl">Keys</DialogTitle><DialogDescription>Your hands can stay on the keyboard.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle className="font-display text-xl">Keys</DialogTitle><DialogDescription>Your hands can stay on the keyboard.</DialogDescription></DialogHeader>
         <div className="divide-y divide-border">{rows.map(([k, l]) => <div key={k} className="flex items-center justify-between py-2 text-sm"><span>{l}</span><span className="flex gap-1">{k.split(' / ').map((x) => <Kbd key={x}>{x}</Kbd>)}</span></div>)}</div>
         <p className="text-xs text-muted-foreground">On phones: swipe a row right for its main action, left to comment.</p>
       </DialogContent>
@@ -284,12 +293,12 @@ export function SignInPrompt({ open, onOpenChange, what }: { open: boolean; onOp
       <DialogContent className="sm:max-w-md">
         <div className="flex justify-center pt-2"><HexMark className="h-12 w-12" /></div>
         <DialogHeader className="text-center sm:text-center">
-          <DialogTitle className="font-display text-[28px]">This one's for the team</DialogTitle>
+          <DialogTitle className="font-display text-2xl">This one's for the team</DialogTitle>
           <DialogDescription>The sample workspace is read-only. Sign in with your Ultramotiv invite to {what ?? 'act on tickets'} for real.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-2">
-          <Button asChild className="rounded-full" data-testid="button-prompt-sign-in"><Link href="/sign-in">Sign in</Link></Button>
-          <Button variant="ghost" className="rounded-full" onClick={() => onOpenChange(false)} data-testid="button-prompt-keep">Keep exploring</Button>
+          <Button asChild className="h-11 rounded-xl" data-testid="button-prompt-sign-in"><Link href="/sign-in">Sign in</Link></Button>
+          <Button variant="ghost" className="h-11 rounded-xl" onClick={() => onOpenChange(false)} data-testid="button-prompt-keep">Keep exploring</Button>
         </div>
         <p className="text-center text-xs text-muted-foreground">No invite yet? Ask your admin.</p>
       </DialogContent>
@@ -299,9 +308,9 @@ export function SignInPrompt({ open, onOpenChange, what }: { open: boolean; onOp
 
 export function PageHeader({ title, sub, right }: { title: string; sub?: ReactNode; right?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end gap-4">
+    <div className="mb-5 flex flex-wrap items-end gap-4">
       <div>
-        <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }} className="font-display text-[40px] leading-none tracking-[-0.015em] md:text-[52px]" data-testid="text-page-title">{title}</motion.h1>
+        <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }} className="font-display text-[26px] leading-tight md:text-[30px]" data-testid="text-page-title">{title}</motion.h1>
         {sub && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.12 }} className="mt-2 text-sm text-muted-foreground">{sub}</motion.p>}
       </div>
       {right && <div className="ml-auto">{right}</div>}
@@ -316,7 +325,7 @@ export function EmptyState({ title, body, art = 'calm' }: { title: string; body:
         {art === 'calm' ? (<><path d="M5 45 Q 30 20 60 40 T 115 30" fill="none" stroke="currentColor" strokeWidth="1.5" opacity=".5" /><circle cx="92" cy="18" r="8" fill="hsl(var(--amber))" opacity=".75" /><path d="M5 52 H115" stroke="hsl(var(--border))" strokeWidth="1.5" /></>)
           : (<><circle cx="52" cy="28" r="16" fill="none" stroke="currentColor" strokeWidth="2" /><path d="m64 40 14 14" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /><path d="M5 56 H115" stroke="hsl(var(--border))" strokeWidth="1.5" /></>)}
       </svg>
-      <h3 className="font-display text-2xl">{title}</h3>
+      <h3 className="font-display text-lg">{title}</h3>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">{body}</p>
     </motion.div>
   );

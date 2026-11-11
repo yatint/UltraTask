@@ -27,10 +27,10 @@ function useCreate() {
             <div className="text-sm font-medium">{t.code} created</div>
             <div className="truncate text-xs text-background/70">{t.title}</div>
             <div className="flex flex-wrap gap-1.5 pt-1">
-              <button className="rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground" data-testid="button-toast-share"
+              <button className="min-h-9 rounded-lg bg-primary px-3 text-[13px] font-semibold text-primary-foreground" data-testid="button-toast-share"
                 onClick={() => { toast.dismiss(tid); run(t, { action: 'share_whatsapp' }); }}>Share on WhatsApp</button>
-              <button className="rounded-full bg-background/15 px-3 py-1 text-xs" data-testid="button-toast-open" onClick={() => { toast.dismiss(tid); openTicket(t.id); }}>Open</button>
-              <button className="ml-auto rounded-full bg-background/15 px-3 py-1 text-xs" data-testid="button-toast-undo"
+              <button className="min-h-9 rounded-lg bg-background/15 px-3 text-[13px]" data-testid="button-toast-open" onClick={() => { toast.dismiss(tid); openTicket(t.id); }}>Open</button>
+              <button className="ml-auto min-h-9 rounded-lg bg-background/15 px-3 text-[13px]" data-testid="button-toast-undo"
                 onClick={() => { toast.dismiss(tid); act.mutate({ id: t.id, data: { action: 'undo' } }, { onSuccess: () => toast('Creation undone. Ticket cancelled.') }); }}>Undo</button>
             </div>
           </div>
@@ -89,6 +89,7 @@ export function CreateTicketDialog() {
   };
 
   const go = () => {
+    if (pending || uploading) return;
     setTried(true);
     if (!title.trim() || !assignee[0] || !due) return;
     submit({ title: title.trim(), description: desc, assigneeId: assignee[0], dueAt: due, priority, projectTagId: tag, watcherIds: watchers, attachments: files }, () => {
@@ -105,18 +106,18 @@ export function CreateTicketDialog() {
     finally { setUploading(false); }
   };
 
-  const missing = tried && (!title.trim() ? 'title' : !assignee[0] ? 'owner' : !due ? 'due date' : '');
+  const missing = !tried ? '' : !title.trim() ? 'Add a title.' : !assignee[0] ? 'Choose an owner.' : !due ? 'Choose a due date.' : '';
 
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[92dvh] gap-0 overflow-y-auto p-0 sm:max-w-[620px]" onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') go(); }}>
+        <DialogContent className="max-h-[92dvh] gap-0 overflow-y-auto p-0 sm:max-w-[620px]" onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); go(); } }}>
           <DialogHeader className="border-b border-border px-6 pb-4 pt-5">
-            <DialogTitle className="font-display text-[28px] leading-none">A new ask</DialogTitle>
+            <DialogTitle className="font-display text-2xl">A new ask</DialogTitle>
             <DialogDescription>One owner. One date. You confirm when it's done.</DialogDescription>
           </DialogHeader>
           <div className="space-y-5 px-6 py-5">
-            <input ref={titleRef} autoFocus value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} data-testid="input-title"
+            <input ref={titleRef} autoFocus value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} data-testid="input-title" aria-label="Task title" aria-required="true" aria-invalid={tried && !title.trim()}
               placeholder="What needs to happen?" className="w-full border-0 bg-transparent text-xl font-medium outline-none placeholder:text-muted-foreground/60" />
             <textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} data-testid="input-description" placeholder="Context, links, acceptance — optional"
               className="w-full resize-none rounded-lg border border-input bg-paper p-3 text-sm outline-none focus:border-primary/50" />
@@ -147,9 +148,7 @@ export function CreateTicketDialog() {
             <label className="flex items-center gap-2 text-sm text-muted-foreground">
               <Checkbox checked={another} onCheckedChange={(v) => setAnother(!!v)} data-testid="checkbox-create-another" /> Create another
             </label>
-            <AnimatePresence>
-              {missing && <motion.span initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="text-xs text-signal" data-testid="text-form-error">Add a {missing}.</motion.span>}
-            </AnimatePresence>
+            {missing && <span role="alert" className="text-xs text-signal" data-testid="text-form-error">{missing}</span>}
             <Button className="ml-auto gap-2" onClick={go} disabled={pending || uploading} data-testid="button-create-ticket">
               {pending && <Loader2 className="h-4 w-4 animate-spin" />} Create ticket
               <span className="hidden font-code text-[10px] opacity-70 sm:inline">Ctrl ↵</span>
@@ -185,13 +184,13 @@ export function QuickAdd({ defaultMe }: { defaultMe?: boolean }) {
     submit({ title: title.trim(), assigneeId: assignee[0], dueAt: due, priority: 'normal' }, () => { setTitle(''); setDue(''); });
   };
   return (
-    <div className="rounded-xl border border-border bg-card shadow-xs transition-shadow focus-within:shadow-md" data-testid="quick-add">
+    <div className="rounded-2xl bg-card shadow-sm ring-1 ring-border transition-shadow focus-within:shadow-md focus-within:ring-2 focus-within:ring-primary/50" data-testid="quick-add">
       <div className="flex items-center gap-2 px-3">
-        <Plus className="h-4 w-4 text-muted-foreground" />
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Plus className="h-4 w-4" /></span>
         <input value={title} onChange={(e) => setTitle(e.target.value)} onFocus={() => setFocused(true)} onKeyDown={(e) => e.key === 'Enter' && go()}
-          maxLength={120} placeholder="Quick add — type the ask, pick an owner and a date" data-testid="input-quick-title"
-          className="h-11 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/70" />
-        <button type="button" onClick={openNewTicket} className="hidden text-xs text-muted-foreground hover:text-foreground sm:block" data-testid="button-full-form">Full form</button>
+          maxLength={120} placeholder="Add a task, then pick owner and deadline" data-testid="input-quick-title"
+          className="h-12 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground" />
+        <button type="button" onClick={openNewTicket} className="hidden min-h-9 rounded-lg px-2.5 text-[13px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground sm:block" data-testid="button-full-form">Full form</button>
       </div>
       <AnimatePresence initial={false}>
         {expanded && (
@@ -199,7 +198,7 @@ export function QuickAdd({ defaultMe }: { defaultMe?: boolean }) {
             <div className="flex flex-col gap-3 border-t border-border px-3 py-3 sm:flex-row sm:items-start">
               <div className="w-full sm:w-52"><PersonPicker value={assignee} onChange={setAssignee} testId="picker-quick-assignee" compact /></div>
               <div className="flex-1"><DueField value={due} onChange={setDue} /></div>
-              <Button size="sm" onClick={go} disabled={!ready || pending} className="gap-1.5 self-end sm:self-start" data-testid="button-quick-create">
+              <Button onClick={go} disabled={!ready || pending} className="h-11 gap-1.5 self-end rounded-xl px-5 font-semibold sm:self-start" data-testid="button-quick-create">
                 {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CornerDownLeft className="h-3.5 w-3.5" />} Add
               </Button>
             </div>

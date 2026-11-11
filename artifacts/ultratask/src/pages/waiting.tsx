@@ -64,14 +64,14 @@ export default function Waiting() {
     <div className="mx-auto max-w-[1100px]">
       <PageHeader title="Waiting on" sub={
         <span data-testid="text-summary">{out} out with others{g.check.length > 0 && <> · <span className="text-primary">{g.check.length} ready for your check</span></>}{g.ext.length > 0 && <> · <span className="text-amber">{g.ext.length} asking for time</span></>}</span>} />
-      <div className="space-y-4">
+      <div className="space-y-3">
         <QuickAdd />
         <FilterBar f={f} setF={setF} hide={['creators']} />
         {ordered.length === 0 ? (
           activeCount(f) || f.q ? <EmptyState art="search" title="Nothing matches" body="Try another person, status or date range." />
             : <EmptyState title="Nobody owes you anything" body="Things you ask of others show up here, with a clear owner and date, until you confirm they're done." />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <TicketGroup title="Ready for your check" hint="Confirm & close, or send back with a note" tickets={g.check} tone="primary" perspective="asker" selectedId={sel} setSelected={setSel} />
             <TicketGroup title="Extension requests" hint="Approve the new date or hold the line" tickets={g.ext} {...chk} tone="amber" perspective="asker" selectedId={sel} setSelected={setSel} />
             <TicketGroup title="Overdue" hint="Tick several to nudge them together — once every 4 hours each" tickets={g.overdue} {...chk} tone="signal" perspective="asker" selectedId={sel} setSelected={setSel} />
@@ -86,10 +86,10 @@ export default function Waiting() {
       <AnimatePresence>
         {picked.size > 0 && (
           <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
-            className="fixed inset-x-0 bottom-20 z-40 mx-auto flex w-[min(92vw,460px)] items-center gap-3 rounded-full bg-foreground py-2 pl-5 pr-2 text-background shadow-xl md:bottom-8" data-testid="bar-bulk">
+            className="fixed inset-x-0 bottom-20 z-40 mx-auto flex w-[min(92vw,460px)] items-center gap-3 rounded-2xl bg-foreground py-2 pl-5 pr-2 text-background shadow-xl md:bottom-8" data-testid="bar-bulk">
             <span className="text-sm"><span className="font-code">{picked.size}</span> selected</span>
-            <button onClick={() => setPicked(new Set())} className="rounded-full p-1 hover:bg-background/15" aria-label="Clear selection" data-testid="button-clear-selection"><X className="h-4 w-4" /></button>
-            <button onClick={nudgeAll} disabled={busy} className="ml-auto flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-60" data-testid="button-nudge-all">
+            <button onClick={() => setPicked(new Set())} className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-background/15" aria-label="Clear selection" data-testid="button-clear-selection"><X className="h-4 w-4" /></button>
+            <button onClick={nudgeAll} disabled={busy} className="ml-auto flex h-11 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-60" data-testid="button-nudge-all">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <BellRing className="h-4 w-4" />} Nudge all
             </button>
           </motion.div>

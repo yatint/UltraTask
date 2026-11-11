@@ -70,29 +70,28 @@ export function TicketDetail({ t }: { t: Ticket }) {
 
   return (
     <div className="mx-auto w-full max-w-[1100px]" data-testid={`ticket-detail-${t.id}`}>
-      <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted-foreground">
-        <span className="font-code text-foreground" data-testid="text-ticket-code">{t.code}</span>
-        <span>·</span>
-        <span className="inline-flex items-center gap-1.5"><StatusIcon status={t.status} />{STATUS_LABEL[t.status]}</span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-muted-foreground">
+        <span className="rounded-md bg-muted px-2 py-0.5 font-code text-[12.5px] font-medium text-foreground" data-testid="text-ticket-code">{t.code}</span>
+        <span className="inline-flex items-center gap-1.5 font-medium text-foreground"><StatusIcon status={t.status} className="h-4 w-4" />{STATUS_LABEL[t.status]}</span>
         <HealthLabel t={t} />
         <TicketFlags t={t} />
       </div>
-      <h1 className="mt-3 text-balance text-[26px] font-semibold leading-tight tracking-[-0.02em] md:text-[32px]" data-testid="text-ticket-title">{t.title}</h1>
+      <h1 className="mt-3 text-balance text-[24px] font-bold leading-tight tracking-[-0.025em] md:text-[30px]" data-testid="text-ticket-title">{t.title}</h1>
 
-      <div className="mt-5 flex flex-wrap gap-2" data-testid="ticket-actions">
+      <div className="mt-5 flex flex-wrap gap-2 rounded-2xl bg-card p-2 shadow-sm ring-1 ring-border" data-testid="ticket-actions">
         {btns.map((b) => (
-          <Button key={b.a + b.label} size="sm" variant={b.primary ? 'default' : 'outline'} disabled={b.disabled || busy(b.a)} title={b.title}
-            className={cn('gap-1.5 rounded-full transition-transform active:scale-[0.97]', !b.primary && 'bg-card', b.a === 'share_whatsapp' && 'ml-auto')}
+          <Button key={b.a + b.label} variant={b.primary ? 'default' : 'ghost'} disabled={b.disabled || busy(b.a)} title={b.title}
+            className={cn('h-11 gap-2 rounded-xl px-4 text-[14px] font-semibold transition-transform active:scale-[0.97]', b.primary && 'px-5 shadow-sm', !b.primary && 'text-foreground/85 hover:bg-muted', b.a === 'share_whatsapp' && 'ml-auto')}
             data-testid={`button-action-${b.a}`}
             onClick={() => (b.onClick ? (guard() && b.onClick()) : run(t, { action: b.a }))}>
             {busy(b.a) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <b.icon className="h-3.5 w-3.5" />}{b.label}
           </Button>
         ))}
         {!readOnly && asker && (isActive(t) || t.status === 'declined') && (
-          <Button size="sm" variant="outline" className="gap-1.5 rounded-full bg-card" onClick={() => guard() && setEditing(true)} data-testid="button-edit-ticket"><Pencil className="h-3.5 w-3.5" />Edit</Button>
+          <Button variant="ghost" className="h-11 gap-2 rounded-xl px-4 text-[14px] font-semibold text-foreground/85 hover:bg-muted" onClick={() => guard() && setEditing(true)} data-testid="button-edit-ticket"><Pencil className="h-3.5 w-3.5" />Edit</Button>
         )}
       </div>
-      {readOnly && <p className="mt-3 text-xs text-muted-foreground" data-testid="text-read-only">You can read this ticket, but only its asker, owner, watchers and admins can act on it.</p>}
+      {readOnly && <p className="mt-3 text-[13px] text-muted-foreground" data-testid="text-read-only">You can read this ticket, but only its asker, owner, watchers and admins can act on it.</p>}
 
       {t.isBlocked && (
         <div className="mt-4 flex items-start gap-3 rounded-xl border border-violet/25 bg-violet/5 p-3.5 text-sm" data-testid="banner-blocked">
@@ -110,8 +109,8 @@ export function TicketDetail({ t }: { t: Ticket }) {
           <p className="mt-1.5 pl-6 text-sm text-muted-foreground">"{pendingExt.reason}"</p>
           {asker && (
             <div className="mt-3 flex gap-2 pl-6">
-              <Button size="sm" className="rounded-full" disabled={busy('approve_extension')} onClick={() => run(t, { action: 'approve_extension', extensionId: pendingExt.id })} data-testid="button-approve-extension">Approve new date</Button>
-              <Button size="sm" variant="outline" className="rounded-full bg-card" onClick={() => guard() && setDlg({ action: 'decline_extension', title: 'Decline the extension', desc: 'The original date stands. Say why.', min: 5, cta: 'Decline', extensionId: pendingExt.id })} data-testid="button-decline-extension">Decline</Button>
+              <Button className="h-11 rounded-xl font-semibold" disabled={busy('approve_extension')} onClick={() => run(t, { action: 'approve_extension', extensionId: pendingExt.id })} data-testid="button-approve-extension">Approve new date</Button>
+              <Button variant="outline" className="h-11 rounded-xl bg-card font-semibold" onClick={() => guard() && setDlg({ action: 'decline_extension', title: 'Decline the extension', desc: 'The original date stands. Say why.', min: 5, cta: 'Decline', extensionId: pendingExt.id })} data-testid="button-decline-extension">Decline</Button>
             </div>
           )}
         </div>
@@ -127,7 +126,9 @@ export function TicketDetail({ t }: { t: Ticket }) {
           </section>
           <Timeline t={t} canComment={!readOnly} />
         </div>
-        <aside className="space-y-1 self-start rounded-xl border border-border bg-card p-4 lg:sticky lg:top-20">
+        <aside className="order-first self-start rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border lg:order-none lg:sticky lg:top-20" aria-label="Details">
+          <div className="mb-1 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">Details</div>
+          <div className="divide-y divide-border/60">
           <Prop k="Owner"><Avatar p={assignee} size={20} /><span data-testid="text-assignee">{assignee?.name}</span></Prop>
           <Prop k="Asked by"><Avatar p={creator} size={20} />{creator?.name}</Prop>
           <Prop k="Due"><span data-testid="text-due">{fmtDue(t.dueAt)}</span></Prop>
@@ -138,7 +139,8 @@ export function TicketDetail({ t }: { t: Ticket }) {
           <Prop k="Created">{fmtDateTime(t.createdAt)}</Prop>
           {t.doneAt && <Prop k="Done">{fmtDateTime(t.doneAt)}</Prop>}
           {t.closedAt && <Prop k="Closed">{fmtDateTime(t.closedAt)}{t.wasOnTime != null && <Chip>{t.wasOnTime ? 'on time' : 'late'}</Chip>}</Prop>}
-          {t.isDemo && <div className="pt-2"><Chip className="stripes border-amber/30 text-amber">Sample ticket</Chip></div>}
+          </div>
+          {t.isDemo && <div className="pt-3"><Chip className="bg-amber/10 text-amber">Sample ticket</Chip></div>}
         </aside>
       </div>
 
@@ -148,9 +150,9 @@ export function TicketDetail({ t }: { t: Ticket }) {
   );
 }
 
-const Label = ({ children }: { children: React.ReactNode }) => <div className="mb-3 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">{children}</div>;
+const Label = ({ children }: { children: React.ReactNode }) => <h2 className="mb-3 text-[15px] font-bold tracking-[-0.01em] text-foreground">{children}</h2>;
 const Prop = ({ k, children }: { k: string; children: React.ReactNode }) => (
-  <div className="grid grid-cols-[84px_1fr] items-center gap-2 py-1.5 text-[13px]">
+  <div className="grid min-h-10 grid-cols-[92px_1fr] items-center gap-2 py-1.5 text-[14px]">
     <span className="text-muted-foreground">{k}</span><span className="flex min-w-0 items-center gap-1.5">{children}</span>
   </div>
 );
@@ -190,7 +192,7 @@ function Timeline({ t, canComment }: { t: Ticket; canComment: boolean }) {
       <div className="mb-3 flex items-center gap-3">
         <Label>Conversation · {commentCount}</Label>
         {histCount > 0 && (
-          <button onClick={() => setShowHist((v) => !v)} className="-mt-3 ml-auto text-[12px] font-medium text-primary hover:underline" data-testid="button-toggle-history">
+          <button onClick={() => setShowHist((v) => !v)} className="-mt-3 ml-auto min-h-10 rounded-lg px-2 text-[13px] font-semibold text-primary hover:bg-accent" data-testid="button-toggle-history">
             {showHist ? 'Hide history' : `Show history (${histCount})`}
           </button>
         )}
@@ -198,13 +200,13 @@ function Timeline({ t, canComment }: { t: Ticket; canComment: boolean }) {
       {items.length === 0 && <p className="text-sm text-muted-foreground">No comments yet. Updates go here, oldest first, newest at the bottom.</p>}
       <ol className="relative space-y-1 before:absolute before:bottom-2 before:left-[11px] before:top-2 before:w-px before:bg-border">
         {items.map((it, i) => it.kind === 'a' ? (
-          <motion.li key={`a${it.a.id}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.3) }} className="relative flex gap-3 py-1.5 pl-0 text-[13px]" data-testid={`activity-${it.a.id}`}>
+          <motion.li key={`a${it.a.id}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.3) }} className="relative flex gap-3 py-1.5 pl-0 text-[13.5px]" data-testid={`activity-${it.a.id}`}>
             <span className="relative z-10 mt-0.5 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-background ring-1 ring-border"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60" /></span>
             <div className="min-w-0 flex-1 text-muted-foreground">
               <span className="font-medium text-foreground">{person(it.a.actorId)?.name ?? 'UltraTask'}</span> {ACT_TEXT[it.a.action] ?? it.a.action.replace(/_/g, ' ')}
               {it.a.fromValue && it.a.toValue && <span> · <span className="line-through">{fmtMaybeDate(it.a.fromValue)}</span> → <span className="text-foreground">{fmtMaybeDate(it.a.toValue)}</span></span>}
               {it.a.note && <span className="block text-foreground/80">"{it.a.note}"</span>}
-              <span className="ml-1.5 text-[11.5px]" title={fmtDateTime(it.a.createdAt)}>{fmtAgo(it.a.createdAt)}</span>
+              <span className="ml-1.5 text-[12.5px]" title={fmtDateTime(it.a.createdAt)}>{fmtAgo(it.a.createdAt)}</span>
             </div>
           </motion.li>
         ) : <CommentItem key={`c${it.c.id}`} c={it.c} mine={it.c.authorId === me.id} />)}
@@ -226,12 +228,12 @@ function CommentItem({ c, mine }: { c: Comment; mine: boolean }) {
   return (
     <li className="relative flex gap-3 py-2" data-testid={`comment-${c.id}`}>
       <span className="relative z-10"><Avatar p={p} size={22} ring /></span>
-      <div className="min-w-0 flex-1 rounded-xl border border-border bg-card px-3.5 py-2.5 shadow-xs">
-        <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+      <div className={cn('min-w-0 flex-1 rounded-2xl px-4 py-3 ring-1', mine ? 'bg-accent/50 ring-primary/15' : 'bg-card ring-border')}>
+        <div className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
           <span className="font-medium text-foreground">{p?.name}</span>
           <span title={fmtDateTime(c.createdAt)}>{fmtAgo(c.createdAt)}</span>
           {c.editedAt && <span>· edited</span>}
-          {editable && !edit && <button className="ml-auto hover:text-foreground" onClick={() => guard() && setEdit(true)} data-testid={`button-edit-comment-${c.id}`}>Edit</button>}
+          {editable && !edit && <button className="ml-auto min-h-8 rounded-md px-2 font-medium hover:bg-muted hover:text-foreground" onClick={() => guard() && setEdit(true)} data-testid={`button-edit-comment-${c.id}`}>Edit</button>}
         </div>
         {edit ? (
           <div className="mt-2 space-y-2">
@@ -288,7 +290,7 @@ function Composer({ t }: { t: Ticket }) {
   return (
     <div className="mt-4 flex gap-3">
       <Avatar p={me} size={28} />
-      <div className="relative flex-1 rounded-xl border border-border bg-card shadow-xs focus-within:border-primary/40">
+      <div className="relative flex-1 rounded-2xl bg-card shadow-sm ring-1 ring-border focus-within:ring-2 focus-within:ring-primary/50">
         {sugg.length > 0 && (
           <div className="absolute bottom-full left-2 z-20 mb-1 w-60 overflow-hidden rounded-lg border border-border bg-popover shadow-lg" data-testid="list-mentions">
             <div className="px-3 pt-2 text-[10.5px] uppercase tracking-wider text-muted-foreground">People on this ticket</div>
@@ -311,12 +313,12 @@ function Composer({ t }: { t: Ticket }) {
           className="w-full resize-none bg-transparent px-3.5 pt-3 text-sm outline-none placeholder:text-muted-foreground/70" />
         {files.length > 0 && <div className="flex flex-wrap gap-1.5 px-3">{files.map((f, i) => <span key={f.objectPath} className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-xs">{f.name}<button onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label="Remove"><X className="h-3 w-3" /></button></span>)}</div>}
         <div className="flex items-center justify-between px-2 pb-2">
-          <label className={cn('flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted', isPreview && 'pointer-events-none opacity-50')}>
+          <label className={cn('flex min-h-10 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium text-muted-foreground hover:bg-muted', isPreview && 'pointer-events-none opacity-50')}>
             {up ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Paperclip className="h-3.5 w-3.5" />} Attach
             <input type="file" multiple className="hidden" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" data-testid="input-comment-file"
               onChange={async (e) => { const l = e.target.files; e.target.value = ''; if (!l?.length || !guard()) return; setUp(true); try { const a = await upload(Array.from(l)); setFiles((f) => [...f, ...a]); } catch (er) { toast.error(errMsg(er)); } finally { setUp(false); } }} />
           </label>
-          <Button size="sm" className="gap-1.5 rounded-full" onClick={send} disabled={comment.isPending || up} data-testid="button-send-comment">
+          <Button className="h-10 gap-1.5 rounded-xl px-4 font-semibold" onClick={send} disabled={comment.isPending || up} data-testid="button-send-comment">
             {comment.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />} Comment
           </Button>
         </div>
