@@ -25,9 +25,9 @@ export default function Settings() {
     <div className="mx-auto max-w-[980px]">
       <PageHeader title="Settings" sub="Your profile, the team, and how the workspace keeps time." />
       <div className="grid gap-8 md:grid-cols-[180px_1fr]">
-        <nav className="scrollbar-thin -mx-4 flex gap-1 overflow-x-auto px-4 md:mx-0 md:flex-col md:px-0">
+        <nav aria-label="Settings sections" className="grid grid-cols-2 gap-1 self-start sm:grid-cols-3 md:flex md:flex-col">
           {tabs.map(([k, l]) => (
-            <button key={k} onClick={() => setTab(k)} data-testid={`tab-settings-${k}`} className={cn('relative whitespace-nowrap rounded-lg px-3 py-2 text-left text-[13.5px] transition-colors', tab === k ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+            <button key={k} onClick={() => setTab(k)} data-testid={`tab-settings-${k}`} className={cn('relative min-h-11 rounded-lg px-3 py-2 text-left text-[13.5px] transition-colors', tab === k ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}>
               {tab === k && <motion.span layoutId="settings-tab" className="absolute inset-0 rounded-lg bg-card shadow-xs ring-1 ring-border" />}
               <span className="relative">{l}</span>
             </button>

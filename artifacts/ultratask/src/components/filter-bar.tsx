@@ -29,8 +29,8 @@ export function FilterBar({ f, setF, hide = [] }: { f: Filters; setF: (f: Filter
   const people = ws.users.filter((u) => u.isActive);
 
   return (
-    <div className="flex items-center gap-2" data-testid="filter-bar">
-      <div className="group flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl bg-card pl-3.5 pr-1.5 ring-1 ring-border transition-shadow focus-within:ring-2 focus-within:ring-primary/50">
+    <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap" data-testid="filter-bar">
+      <div className="group flex h-11 min-w-0 basis-full items-center gap-2 rounded-xl bg-card pl-3.5 pr-1.5 ring-1 ring-border transition-shadow focus-within:ring-2 focus-within:ring-primary/50 sm:basis-auto sm:flex-1">
         <Search className="h-4 w-4 text-muted-foreground" />
         <input ref={ref} value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} data-testid="input-search"
           placeholder="Filter this list" aria-label="Filter this list by code, title, notes or comments" className="h-full min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground" />
@@ -39,7 +39,7 @@ export function FilterBar({ f, setF, hide = [] }: { f: Filters; setF: (f: Filter
       <Popover>
         <PopoverTrigger asChild>
           <button data-testid="button-filters" className={cn('flex h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-[14px] font-medium transition-all active:scale-[0.97] sm:px-4', n ? 'bg-foreground text-background' : 'bg-card ring-1 ring-border hover:ring-foreground/30')}>
-            <SlidersHorizontal className="h-4 w-4" /><span className="hidden sm:inline">Filters</span>{n > 0 && <span className="font-code text-xs">{n}</span>}<span className="sr-only">Filters</span>
+            <SlidersHorizontal className="h-4 w-4" /><span>Filters</span>{n > 0 && <span className="font-code text-xs">{n}</span>}
           </button>
         </PopoverTrigger>
         <PopoverContent align="start" className="max-h-[70dvh] w-[min(92vw,440px)] overflow-y-auto rounded-2xl p-0">

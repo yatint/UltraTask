@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { CornerDownLeft, Paperclip, X, Loader2, Plus } from 'lucide-react';
+import { CornerDownLeft, Paperclip, X, Loader2, Plus, Info } from 'lucide-react';
 import type { Attachment, TicketInput } from '@workspace/api-client-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useWs } from '@/lib/workspace';
 import { errMsg, errStatus, useOps, useTicketActions, useUploader } from '@/lib/ops';
+import { isFutureIso } from '@/lib/due-input';
 import { DueField, PersonPicker, PriorityPicker, TagSelect } from './pickers';
 
 export const openNewTicket = () => window.dispatchEvent(new CustomEvent('ut:new'));
@@ -95,7 +97,7 @@ export function CreateTicketDialog() {
       titleRef.current?.focus();
       return;
     }
-    if (!assignee[0] || !due) return;
+    if (!assignee[0] || !isFutureIso(due)) return;
     submit({ title: title.trim(), description: desc, assigneeId: assignee[0], dueAt: due, priority, projectTagId: tag, watcherIds: watchers, attachments: files }, () => {
       if (another) { reset(true); setTimeout(() => titleRef.current?.focus(), 30); }
       else { reset(false); setOpen(false); }
@@ -110,17 +112,17 @@ export function CreateTicketDialog() {
     finally { setUploading(false); }
   };
 
-  const missing = !tried ? '' : !title.trim() ? 'Add a title.' : !assignee[0] ? 'Choose an owner.' : !due ? 'Choose a due date.' : '';
+  const missing = !tried ? '' : !title.trim() ? 'Add a title.' : !assignee[0] ? 'Choose an owner.' : !isFutureIso(due) ? 'Choose a valid future deadline.' : '';
 
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[92dvh] gap-0 overflow-y-auto p-0 sm:max-w-[620px]" onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); go(); } }}>
-          <DialogHeader className="border-b border-border px-6 pb-4 pt-5">
+        <DialogContent className="flex max-h-[min(92dvh,100%)] w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[620px]" onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); go(); } }}>
+          <DialogHeader className="shrink-0 border-b border-border px-4 pb-4 pt-5 text-left sm:px-6">
             <DialogTitle className="font-display text-2xl">New task</DialogTitle>
             <DialogDescription>One owner. One date. You confirm when it's done.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-5 px-6 py-5">
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6">
             <div className="space-y-2">
               <label htmlFor="new-task-title" className="block text-sm font-semibold text-foreground">Task title <span className="text-signal" aria-hidden="true">*</span></label>
               <input id="new-task-title" ref={titleRef} autoFocus value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} data-testid="input-title" aria-required="true" aria-invalid={tried && !title.trim()} aria-describedby="new-task-title-hint"
@@ -137,30 +139,50 @@ export function CreateTicketDialog() {
               <Field label="Project"><TagSelect value={tag} onChange={setTag} /></Field>
             </div>
             <Field label="Due" req><DueField value={due} onChange={setDue} /></Field>
-            <div className="grid gap-4 sm:grid-cols-[auto_1fr]">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Priority"><PriorityPicker value={priority ?? 'normal'} onChange={setPriority} /></Field>
               <Field label="Watchers"><PersonPicker multiple value={watchers} onChange={setWatchers} placeholder="Keep others in the loop" testId="picker-watchers" /></Field>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-input px-2.5 py-1.5 text-xs text-muted-foreground hover:border-foreground/30 hover:text-foreground">
-                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Paperclip className="h-3.5 w-3.5" />}
+            <div className="space-y-2">
+              <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-dashed border-input px-3 text-sm text-muted-foreground focus-within:ring-2 focus-within:ring-primary/30 hover:border-foreground/30 hover:text-foreground">
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
                 {uploading ? 'Uploading' : 'Attach image or PDF (10 MB)'}
-                <input type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" className="hidden" data-testid="input-attachments" onChange={(e) => { onFiles(e.target.files); e.target.value = ''; }} />
+                <input type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" className="sr-only" data-testid="input-attachments" onChange={(e) => { onFiles(e.target.files); e.target.value = ''; }} />
               </label>
-              {files.map((f, i) => (
-                <span key={f.objectPath} className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
-                  {f.name}
-                  <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label="Remove"><X className="h-3 w-3" /></button>
-                </span>
-              ))}
+              {files.length > 0 && (
+                <ul className="flex flex-col gap-1.5">
+                  {files.map((f, i) => (
+                    <li key={f.objectPath} className="flex min-w-0 items-center gap-2 rounded-lg bg-muted py-1 pl-3 pr-1 text-sm" data-testid={`attachment-${i}`}>
+                      <span className="min-w-0 flex-1 truncate" title={f.name}>{f.name}</span>
+                      <button type="button" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-background hover:text-foreground" onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label={`Remove ${f.name}`} data-testid={`button-remove-attachment-${i}`}><X className="h-4 w-4" /></button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
-          <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-border bg-card/95 px-6 py-3 backdrop-blur">
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Checkbox checked={another} onCheckedChange={(v) => setAnother(!!v)} data-testid="checkbox-create-another" /> Create another
-            </label>
+          <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-border bg-card px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
+            <div className="flex items-center">
+              <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-foreground">
+                <Checkbox checked={another} onCheckedChange={(v) => setAnother(!!v)} data-testid="checkbox-create-another" aria-describedby="create-another-help" /> Create another
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" aria-label="What does Create another do?" data-testid="button-create-another-info" className="ml-0.5 flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+                    <Info className="h-4 w-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="start" collisionPadding={16} className="w-[min(18rem,calc(100vw-2rem))] text-sm leading-relaxed" data-testid="popover-create-another">
+                  <p id="create-another-help" className="font-semibold text-foreground">Create another</p>
+                  <p className="mt-1 text-muted-foreground">After this task is created, the form stays open for the next one.</p>
+                  <p className="mt-2"><span className="font-medium">Keeps:</span> owner, project and watchers.</p>
+                  <p className="mt-1"><span className="font-medium">Clears:</span> title, description, deadline, priority and attachments.</p>
+                  <p className="mt-2 text-muted-foreground">It does not copy the task you just made, and it does not mark anything complete.</p>
+                </PopoverContent>
+              </Popover>
+            </div>
             {missing && <span role="alert" className="text-xs text-signal" data-testid="text-form-error">{missing}</span>}
-            <Button className="ml-auto gap-2" onClick={go} disabled={pending || uploading} data-testid="button-create-ticket">
+            <Button className="ml-auto min-h-11 gap-2" onClick={go} disabled={pending || uploading} data-testid="button-create-ticket">
               {pending && <Loader2 className="h-4 w-4 animate-spin" />} Create ticket
               <span className="hidden font-code text-[10px] opacity-70 sm:inline">Ctrl ↵</span>
             </Button>
@@ -189,9 +211,9 @@ export function QuickAdd({ defaultMe }: { defaultMe?: boolean }) {
   const [focused, setFocused] = useState(false);
   const { submit, pending, dialog } = useCreate();
   const expanded = focused || !!title;
-  const ready = title.trim() && assignee[0] && due;
+  const ready = !!title.trim() && !!assignee[0] && isFutureIso(due);
   const go = () => {
-    if (!guard('create tickets') || !ready) return;
+    if (!guard('create tickets') || !ready) { if (due && !isFutureIso(due)) toast.error('Choose a valid future deadline.'); return; }
     submit({ title: title.trim(), assigneeId: assignee[0], dueAt: due, priority: 'normal' }, () => { setTitle(''); setDue(''); });
   };
   return (

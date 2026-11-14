@@ -228,7 +228,7 @@ function GlobalSearch() {
   return (
     <div className="relative min-w-0 flex-1 md:max-w-md">
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <input ref={ref} value={q} placeholder="Search tickets and comments" aria-label="Search tickets and comments" data-testid="input-global-search"
+      <input ref={ref} value={q} placeholder="Search" aria-label="Search tickets and comments" data-testid="input-global-search"
         onChange={(e) => { setQ(e.target.value); setOpen(true); setI(0); }} onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)}
         onKeyDown={(e) => {
           if (e.key === 'ArrowDown') { e.preventDefault(); setI((x) => Math.min(x + 1, results.length - 1)); }

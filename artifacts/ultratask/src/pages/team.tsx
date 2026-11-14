@@ -70,7 +70,7 @@ function People({ list, sel, setSel }: { list: Ticket[]; sel: number | null; set
               <div className="truncate text-[15px] font-bold tracking-[-0.01em]">{u.name}</div>
               <div className="truncate text-[13px] text-muted-foreground">{u.designation}</div>
             </div>
-            <div className="grid w-full grid-cols-5 gap-x-2 sm:ml-auto sm:flex sm:w-auto sm:gap-x-5">
+            <div className="grid w-full grid-cols-3 gap-x-3 gap-y-3 min-[480px]:grid-cols-5 sm:ml-auto sm:flex sm:w-auto sm:gap-x-5">
               <Stat n={act} l="open" /><Stat n={over} l="overdue" tone={over ? 'text-signal' : ''} /><Stat n={na} l="not accepted" /><Stat n={blk} l="blocked" tone={blk ? 'text-violet' : ''} /><Stat n={chk} l="to check" tone={chk ? 'text-check' : ''} />
             </div>
           </header>
@@ -85,7 +85,7 @@ function People({ list, sel, setSel }: { list: Ticket[]; sel: number | null; set
 }
 
 const Stat = ({ n, l, tone }: { n: number; l: string; tone?: string }) => (
-  <div className="min-w-[56px]"><div className={cn('font-code text-[18px] font-semibold leading-none tabular-nums', tone)}>{n}</div><div className="mt-1 text-[12px] text-muted-foreground">{l}</div></div>
+  <div className="min-w-0 sm:min-w-[56px]"><div className={cn('font-code text-[18px] font-semibold leading-none tabular-nums', tone)}>{n}</div><div className="mt-1 text-[12px] text-muted-foreground">{l}</div></div>
 );
 
 type Col = (typeof COLS)[number];
