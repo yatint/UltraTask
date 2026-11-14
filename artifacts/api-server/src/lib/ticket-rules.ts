@@ -2,6 +2,7 @@ import type { Person, Ticket, Settings, Activity, Extension, TicketAction, Ticke
 import { get, list, insert, save, requireCondition, type Store } from "./store";
 import { involved, manages, works, isAdmin } from "../middlewares/identity";
 import { ObjectStorageService } from "./objectStorage";
+import { canRespondToTask } from "./ticket-access";
 const storage = new ObjectStorageService();
 export const nowISO = () => new Date().toISOString();
 export function futureDate(value: string | undefined): string {
@@ -106,7 +107,8 @@ export async function ticketAction(q: Store, p: Person, t: Ticket, input: Ticket
   let actionName: string = action;
   switch (action) {
     case "accept":
-      requireAssignee(); requireCondition(t.status === "open", "Only open tickets can be accepted.");
+      requireCondition(canRespondToTask(p, t), "Only the assigned owner can accept a task from someone else.", 403);
+      requireCondition(t.status === "open", "Only open tickets can be accepted.");
       t.status = "accepted"; t.acceptedAt = nowISO(); actionName = "accepted"; break;
     case "start":
       requireAssignee(); requireCondition(t.status === "accepted" || (self && t.status === "open"), "Accept this ticket before starting.");
@@ -135,7 +137,8 @@ export async function ticketAction(q: Store, p: Person, t: Ticket, input: Ticket
       requireCondition(t.status === "done" || (isAdmin(p) && t.status === "closed"), "Only completed tickets can be reopened; closed tickets require an admin.");
       t.status = "in_progress"; t.reopenCount++; t.doneAt = null; t.closedAt = null; t.wasOnTime = null; actionName = "reopened"; break;
     case "decline":
-      requireAssignee(); reasonRequired(reason); requireCondition(t.status === "open", "Only open tickets can be declined.");
+      requireCondition(canRespondToTask(p, t), "Only the assigned owner can decline a task from someone else.", 403);
+      reasonRequired(reason); requireCondition(t.status === "open", "Only open tickets can be declined.");
       t.status = "declined"; t.declinedAt = nowISO(); actionName = "declined"; break;
     case "cancel":
       requireManager(); reasonRequired(reason); requireCondition(t.status !== "closed" && t.status !== "cancelled", "This ticket cannot be cancelled.");
@@ -179,6 +182,7 @@ export async function ticketAction(q: Store, p: Person, t: Ticket, input: Ticket
       actionName = "shared_whatsapp"; break;
     case "request_extension": {
       requireAssignee(); requireCondition(openState && t.status !== "done", "This ticket cannot request more time.");
+      requireCondition(!self, "Edit the deadline of your own task instead of requesting time from yourself.");
       reasonRequired(reason);
       const proposedDueAt = futureDate(input.proposedDueAt);
       requireCondition(new Date(proposedDueAt) > new Date(t.dueAt), "Propose a date after the current due date.");

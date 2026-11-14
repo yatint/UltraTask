@@ -3,6 +3,7 @@ import { Readable } from "node:stream";
 import { RequestUploadUrlBody, RequestUploadUrlResponse, type Person, type Ticket, type Comment, type Settings } from "@workspace/api-zod";
 import { pool, insert, list, get, requireCondition } from "../lib/store";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { canReadTask } from "../lib/ticket-access";
 
 const router: IRouter = Router();
 const storage = new ObjectStorageService();
@@ -21,10 +22,11 @@ router.get("/storage/objects/{*path}", async (req, res): Promise<void> => {
   const registered = await pool.query("SELECT owner_id,data FROM ut_uploads WHERE object_path=$1", [objectPath]);
   const upload = registered.rows[0];
   requireCondition(upload, "File not found.", 404);
-  let allowed = upload.owner_id === p.id || p.role === "admin";
+  let allowed = upload.owner_id === p.id;
   if (!allowed) {
     const settings = (await get<Settings>(pool, "settings", 1))!;
-    const tickets = await list<Ticket>(pool, "tickets", settings.membersSeeAllTickets ? "TRUE" : "(assignee_id=$1 OR creator_id=$1 OR $1=ANY(watcher_ids))", settings.membersSeeAllTickets ? [] : [p.id]);
+    const candidates = await list<Ticket>(pool, "tickets", p.role === "admin" || settings.membersSeeAllTickets ? "TRUE" : "(assignee_id=$1 OR creator_id=$1 OR $1=ANY(watcher_ids))", p.role === "admin" || settings.membersSeeAllTickets ? [] : [p.id]);
+    const tickets = candidates.filter((t) => canReadTask(p, t, settings.membersSeeAllTickets));
     const ids = tickets.map((t) => t.id);
     const comments = await list<Comment>(pool, "comments", "ticket_id=ANY($1::int[])", [ids]);
     allowed = [...tickets, ...comments].some((t) => t.attachments.some((a) => a.objectPath === objectPath));

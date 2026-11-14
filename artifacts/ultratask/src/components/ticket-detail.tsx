@@ -10,6 +10,7 @@ import { assetUrl, useWs } from '@/lib/workspace';
 import { errMsg, useOps, useTicketActions, useUploader } from '@/lib/ops';
 import { customDueIso, fmtAgo, fmtDateTime, fmtDue, inputFromDay, istDay, isActive } from '@/lib/time';
 import { Avatar, Chip, HealthLabel, PriorityGlyph, STATUS_LABEL, StatusIcon, TagPill, TicketFlags } from './atoms';
+import { ticketCaps } from './ticket-list';
 import { OverdueReminderButton, ReminderNote, useReminderState } from './overdue-reminder';
 import { DueField, PersonPicker, PriorityPicker, TagSelect } from './pickers';
 
@@ -26,7 +27,7 @@ export function TicketDetail({ t }: { t: Ticket }) {
   const isCreator = t.createdById === me.id;
   const own = isAssignee || isAdmin;
   const asker = isCreator || isAdmin;
-  const self = isAssignee && isCreator;
+  const self = t.assigneeId === t.createdById;
   const isWatcher = t.watcherIds.includes(me.id);
   const extensions = ws.extensions.filter((e) => e.ticketId === t.id);
   const pendingExt = extensions.find((e) => e.status === 'pending');
@@ -37,34 +38,29 @@ export function TicketDetail({ t }: { t: Ticket }) {
   const busy = (a: TicketActionAction) => pending && variables?.id === t.id && variables.data.action === a;
   type Btn = { a: TicketActionAction; label: string; icon: typeof Check; primary?: boolean; onClick?: () => void; disabled?: boolean; title?: string };
   const btns: Btn[] = [];
-  if (t.status === 'open' && self) btns.push({ a: 'start', label: 'Start', icon: Play, primary: true });
-  else if (t.status === 'open' && own) {
+  const cap = ticketCaps(t, me.id, isAdmin);
+  if (cap.accept) {
     btns.push({ a: 'accept', label: 'Accept', icon: Check, primary: true });
-    if (isAssignee) btns.push({ a: 'accept', label: 'Accept, but I need more time', icon: Clock, onClick: () => run(t, { action: 'accept' }, () => setDlg(EXT_CFG)) });
+    btns.push({ a: 'accept', label: 'Accept, but I need more time', icon: Clock, onClick: () => run(t, { action: 'accept' }, () => setDlg(EXT_CFG)) });
     btns.push({ a: 'decline', label: 'Decline', icon: X, onClick: () => setDlg({ action: 'decline', title: 'Decline this ask', desc: 'Say why, so the asker can reassign or rethink it.', min: 5, cta: 'Decline' }) });
   }
-  if (t.status === 'accepted' && own) btns.push({ a: 'start', label: 'Start', icon: Play, primary: true });
-  if ((t.status === 'accepted' || t.status === 'in_progress') && own) {
-    if (self && t.status === 'in_progress') btns.push({ a: 'close', label: 'Close', icon: Check, primary: true });
-    else btns.push({ a: 'done', label: 'Mark done', icon: Check, primary: t.status === 'in_progress', onClick: () => setDlg({ action: 'done', title: 'Mark it done', desc: `${person(t.createdById)?.name ?? 'The asker'} will check and close it. Add proof if you have it — optional.`, proof: true, cta: 'Mark done' }) });
-  }
-  if (self && t.status === 'accepted') btns.push({ a: 'close', label: 'Close', icon: Check });
-  if (t.status === 'done' && asker) {
-    btns.push({ a: 'close', label: 'Confirm & close', icon: Check, primary: true });
-    btns.push({ a: 'reopen', label: 'Not yet — reopen', icon: RotateCcw, onClick: () => setDlg({ action: 'reopen', title: 'Send it back', desc: 'What is still missing?', min: 5, cta: 'Reopen' }) });
-  }
-  if (t.status === 'closed' && isAdmin) btns.push({ a: 'reopen', label: 'Reopen', icon: RotateCcw, onClick: () => setDlg({ action: 'reopen', title: 'Reopen a closed ticket', desc: 'Admins only. The history keeps both outcomes.', min: 5, cta: 'Reopen' }) });
+  if (cap.start) btns.push({ a: 'start', label: 'Start', icon: Play, primary: true });
+  if (cap.done) btns.push({ a: 'done', label: 'Mark done', icon: Check, primary: t.status === 'in_progress', onClick: () => setDlg({ action: 'done', title: 'Mark it done', desc: `${person(t.createdById)?.name ?? 'The asker'} will check and close it. Add proof if you have it, optional.`, proof: true, cta: 'Mark done' }) });
+  if (cap.close) btns.push({ a: 'close', label: t.status === 'done' ? 'Confirm & close' : 'Close', icon: Check, primary: true });
+  if (cap.reopen) btns.push({ a: 'reopen', label: t.status === 'done' ? 'Not yet, reopen' : 'Reopen', icon: RotateCcw, onClick: () => setDlg(t.status === 'done'
+    ? { action: 'reopen', title: 'Send it back', desc: 'What is still missing?', min: 5, cta: 'Reopen' }
+    : { action: 'reopen', title: 'Reopen a closed ticket', desc: 'Admins only. The history keeps both outcomes.', min: 5, cta: 'Reopen' }) });
   if ((t.status === 'accepted' || t.status === 'in_progress') && (own || isCreator)) {
     if (t.isBlocked) btns.push({ a: 'unblock', label: 'Unblock', icon: Unlock });
     else btns.push({ a: 'block', label: 'Blocked', icon: Lock, onClick: () => setDlg({ action: 'block', title: 'What is it waiting on?', desc: 'Name the blocker and, if it is a person, who.', min: 5, person: true, cta: 'Mark blocked' }) });
   }
-  if (isActive(t) && isAssignee && !pendingExt) btns.push({ a: 'request_extension', label: 'Ask for more time', icon: Clock, onClick: () => setDlg(EXT_CFG) });
+  if (isActive(t) && isAssignee && !self && !pendingExt) btns.push({ a: 'request_extension', label: 'Ask for more time', icon: Clock, onClick: () => setDlg(EXT_CFG) });
   if (isActive(t) && !rem.show && !isAssignee && (isCreator || isWatcher || isAdmin)) btns.push({ a: 'nudge', label: nudgeLeft > 0 ? `Nudge in ${Math.ceil(nudgeLeft / 3600000)}h` : 'Nudge', icon: BellRing, disabled: nudgeLeft > 0, title: nudgeLeft > 0 ? `One nudge per ${ws.settings.nudgeCooldownHours}h` : 'Send a gentle reminder' });
   if ((isActive(t) || t.status === 'declined') && asker) btns.push({ a: 'cancel', label: 'Cancel ticket', icon: Ban, onClick: () => setDlg({ action: 'cancel', title: 'Cancel this ticket?', desc: 'It stays in history. Give a short reason.', min: 5, cta: 'Cancel ticket', danger: true }) });
   const participant = isAssignee || isCreator || isWatcher || isAdmin;
   const readOnly = !participant;
   if (readOnly) btns.length = 0;
-  btns.push({ a: 'share_whatsapp', label: 'WhatsApp', icon: Share2 });
+  else btns.push({ a: 'share_whatsapp', label: 'WhatsApp', icon: Share2 });
 
   const creator = person(t.createdById);
   const assignee = person(t.assigneeId);
@@ -95,6 +91,7 @@ export function TicketDetail({ t }: { t: Ticket }) {
         )}
       </div>
       {!readOnly && <ReminderNote t={t} />}
+      {btns.length === 0 && !readOnly && <span className="sr-only" />}
       {readOnly && <p className="mt-3 text-[13px] text-muted-foreground" data-testid="text-read-only">You can read this ticket, but only its asker, owner, watchers and admins can act on it.</p>}
 
       {t.isBlocked && (
@@ -306,7 +303,7 @@ function Composer({ t }: { t: Ticket }) {
             ))}
           </div>
         )}
-        <textarea ref={ta} value={body} onChange={(e) => { setBody(e.target.value); setMi(0); }} rows={2} placeholder={isPreview ? 'Sign in to comment' : 'Add an update — type @ to mention someone on this ticket'}
+        <textarea ref={ta} value={body} onChange={(e) => { setBody(e.target.value); setMi(0); }} rows={2} placeholder={isPreview ? 'Sign in to comment' : 'Add an update, type @ to mention someone on this ticket'}
           onKeyDown={(e) => {
             if (sugg.length) {
               if (e.key === 'ArrowDown') { e.preventDefault(); setMi((x) => (x + 1) % sugg.length); return; }
@@ -377,7 +374,7 @@ function ActionDialog({ cfg, t, onClose }: { cfg: DlgCfg | null; t: Ticket; onCl
           </div>
         )}
         {cfg?.person && <PersonPicker value={who} onChange={setWho} placeholder="Blocked on a person (optional)" testId="picker-blocked-on" />}
-        <textarea autoFocus value={reason} onChange={(e) => setReason(e.target.value)} rows={3} data-testid="input-reason" placeholder={cfg?.proof ? 'What was done? (optional — posted as a comment)' : 'Reason'}
+        <textarea autoFocus value={reason} onChange={(e) => setReason(e.target.value)} rows={3} data-testid="input-reason" placeholder={cfg?.proof ? 'What was done? (optional, posted as a comment)' : 'Reason'}
           className="w-full rounded-lg border border-input bg-paper p-3 text-sm outline-none focus:border-primary/50" />
         {cfg?.proof && (
           <div className="flex flex-wrap items-center gap-1.5">
@@ -425,7 +422,7 @@ function EditDialog({ t, onClose }: { t: Ticket; onClose: () => void }) {
       <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">Edit {t.code}</DialogTitle>
-          <DialogDescription>Changing the owner or due date needs a reason. Everyone sees it in the history.</DialogDescription>
+          <DialogDescription>Changing the owner or due date needs a reason. Owners of their own tasks reschedule here. Everyone sees it in the history.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} className="w-full rounded-lg border border-input bg-paper px-3 py-2 text-base font-medium" data-testid="input-edit-title" />

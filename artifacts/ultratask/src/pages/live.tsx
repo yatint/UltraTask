@@ -62,7 +62,10 @@ function TicketPage() {
   const id = Number(params.id);
   const { ticketById } = useWs();
   const q = useGetTicket(id, { query: { queryKey: getGetTicketQueryKey(id), enabled: Number.isFinite(id), refetchInterval: 30000, retry: (n, e) => errStatus(e) >= 500 && n < 2 } });
-  const t = q.data ?? ticketById(id);
+  // A refetch can revoke access after reassignment or removal of a watcher.
+  // Never keep rendering an earlier cached ticket after the server denies it.
+  const denied = [401, 403, 404].includes(errStatus(q.error));
+  const t = denied ? undefined : q.data ?? ticketById(id);
   return (
     <div>
       <Link href="/tasks" className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground" data-testid="link-back">

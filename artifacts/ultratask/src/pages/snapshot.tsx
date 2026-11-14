@@ -28,7 +28,7 @@ const BANDS: { title: string; metrics: Metric[] }[] = [
   {
     title: 'Right now',
     metrics: [
-      { k: 'totalAssigned', label: 'Assigned', def: 'Every retained task where this person is the current owner. A reassigned task counts once, for its final owner.' },
+      { k: 'totalAssigned', label: 'Assigned', def: 'Every retained task visible to you where this person is the current owner. Unwatched personal tasks belonging to others are excluded. A reassigned task counts once, for its final owner.' },
       { k: 'open', label: 'Open', def: 'Still active: open, accepted or in progress. Includes the overdue ones.' },
       { k: 'overdue', label: 'Overdue', def: 'Active and past its deadline right now, blocked tasks included. Already counted inside Open.', tone: 'text-signal' },
       { k: 'waitingForCheck', label: 'Awaiting check', def: 'Marked done by the owner, not yet confirmed by the asker. Not counted as completed, and never overdue.', tone: 'text-check' },
@@ -37,7 +37,7 @@ const BANDS: { title: string; metrics: Metric[] }[] = [
   {
     title: 'Finished',
     metrics: [
-      { k: 'completed', label: 'Completed', def: 'Confirmed and closed by the person who asked.' },
+      { k: 'completed', label: 'Completed', def: 'Confirmed and closed by the asker or an admin, or closed by the owner of a self-assigned task.' },
       { k: 'onTime', label: 'On time', def: 'Completed by the deadline. Early completions are included here.', tone: 'text-ok' },
       { k: 'early', label: 'Early', def: 'Completed strictly before the deadline. Also counted in On time.' },
       { k: 'late', label: 'Late', def: 'Completed after the deadline.', tone: 'text-signal' },
@@ -88,7 +88,7 @@ export default function Snapshot() {
   return (
     <div className="mx-auto max-w-[1100px]">
       <PageHeader title="Snapshot"
-        sub={<span data-testid="text-snapshot-sub">Lifetime record for every person, across all retained tasks, old closed ones included.{q.data && <> Updated {fmtDateTime(q.data.generatedAt)} IST.</>}</span>}
+        sub={<span data-testid="text-snapshot-sub">Lifetime record across tasks visible to you, old closed ones included. Other people’s unwatched personal tasks stay private.{q.data && <> Updated {fmtDateTime(q.data.generatedAt)} IST.</>}</span>}
         right={!isPreview ? (
           <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl bg-card px-3.5 ring-1 ring-border">
             <span className="text-[13px] font-medium">Include sample tasks</span>

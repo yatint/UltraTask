@@ -29,7 +29,7 @@ export default function MyTasks() {
       all: () => true,
       overdue: (t) => isOverdue(t, now),
       today: (t) => !isOverdue(t, now) && istDay(t.dueAt) === today,
-      not_accepted: (t) => t.status === 'open',
+      not_accepted: (t) => t.status === 'open' && t.assigneeId !== t.createdById,
       blocked: (t) => t.isBlocked,
     };
     const counts = Object.fromEntries(CHIPS.map(([k]) => [k, open.filter(test[k]).length])) as Record<ChipKey, number>;
@@ -42,7 +42,7 @@ export default function MyTasks() {
     };
     const overdue = take((t) => isOverdue(t, now), (a, b) => +new Date(a.dueAt) - +new Date(b.dueAt));
     const dueToday = take((t) => istDay(t.dueAt) === today);
-    const notAccepted = take((t) => t.status === 'open');
+    const notAccepted = take((t) => t.status === 'open' && t.assigneeId !== t.createdById);
     const week = take((t) => istDay(t.dueAt) - today <= 6);
     const later = take(() => true);
     const done = chip === 'all' ? mine.filter((t) => t.status === 'done' || (t.status === 'closed' && t.closedAt && today - istDay(t.closedAt) <= 7)) : [];

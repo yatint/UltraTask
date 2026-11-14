@@ -8,6 +8,12 @@ Invitation-only internal task tracking for Ultramotiv's rehabilitation robotics 
 - One company, one team, one owner and a required due date per task.
 - The assignee marks work done; the creator or an admin confirms and closes it.
 - Personal tasks skip acceptance and move from open to in progress to closed.
+- Accept and Decline belong only to the actual owner of a non-self-assigned task;
+  admins and creators cannot answer an assignment on someone else's behalf.
+- Self-assigned tasks without watchers are personal to their owner and excluded
+  from other users' lists, details, attachments and Snapshot metrics. Adding a
+  watcher makes the task shared. Personal deadline changes use Edit, not an
+  extension request to oneself.
 - Audit history is append-only. There is no comment deletion.
 - The user explicitly approved overdue reminders and a lifetime Team snapshot.
   Other Phase 2 features remain deferred: digests, web push, escalations,

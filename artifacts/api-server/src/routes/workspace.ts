@@ -13,6 +13,7 @@ import { publicPreview } from "../lib/seed";
 import { requirePerson, limitWrites, readableTicket, involved, adminOnly } from "../middlewares/identity";
 import { activePerson, futureDate, log, notify, persistTicket, ticketAction, updateTicket, validateAttachments, nowISO } from "../lib/ticket-rules";
 import { buildSnapshot } from "../lib/task-insights";
+import { canReadTask } from "../lib/ticket-access";
 import { deliverOverdueReminder, sweepOverdueReminders } from "../lib/overdue-reminders";
 
 const router: IRouter = Router();
@@ -34,15 +35,17 @@ router.get("/snapshot", async (req, res): Promise<void> => {
     list<Person>(pool, "people"), list<Ticket>(pool, "tickets"),
     list<import("@workspace/api-zod").Activity>(pool, "activity"),
   ]);
-  res.set("Cache-Control", "no-store").json(GetSnapshotResponse.parse(buildSnapshot(users, tickets, activities, includeDemo)));
+  const visible = tickets.filter((t) => canReadTask(res.locals.person, t));
+  res.set("Cache-Control", "no-store").json(GetSnapshotResponse.parse(buildSnapshot(users, visible, activities, includeDemo)));
 });
 router.get("/workspace", async (_req, res): Promise<void> => {
   await sweepOverdueReminders();
   const p: Person = res.locals.person;
   const settings = (await get<Settings>(pool, "settings", 1))!;
-  const tickets = await list<Ticket>(pool, "tickets",
+  const candidates = await list<Ticket>(pool, "tickets",
     p.role === "admin" || settings.membersSeeAllTickets ? "TRUE" : "(assignee_id=$1 OR creator_id=$1 OR $1=ANY(watcher_ids))",
     p.role === "admin" || settings.membersSeeAllTickets ? [] : [p.id]);
+  const tickets = candidates.filter((t) => canReadTask(p, t, settings.membersSeeAllTickets));
   const ids = tickets.map((t) => t.id);
   const [users, tags, comments, activities, extensions, notifications] = await Promise.all([
     list<Person>(pool, "people"), list(pool, "tags"),

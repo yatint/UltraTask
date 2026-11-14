@@ -10,7 +10,7 @@ import { fmtDue, isActive, isOverdue, istDay } from '@/lib/time';
 import { PageHeader, EmptyState } from '@/components/shell';
 import { FilterBar } from '@/components/filter-bar';
 import { Avatar, HealthLabel, PriorityGlyph, STATUS_LABEL, StatusIcon, TagPill, TicketFlags } from '@/components/atoms';
-import { TicketRow, useListKeys } from '@/components/ticket-list';
+import { TicketRow, ticketCaps, useListKeys } from '@/components/ticket-list';
 
 const COLS = ['open', 'accepted', 'in_progress', 'done', 'closed'] as const;
 
@@ -56,14 +56,14 @@ function People({ list, sel, setSel }: { list: Ticket[]; sel: number | null; set
   const now = Date.now();
   const people = ws.users.filter((u) => u.isActive).map((u) => {
     const ts = list.filter((t) => t.assigneeId === u.id && t.status !== 'closed');
-    return { u, ts, over: ts.filter((t) => isOverdue(t, now)).length, act: ts.filter(isActive).length, na: ts.filter((t) => t.status === 'open').length, blk: ts.filter((t) => isActive(t) && t.isBlocked).length, chk: ts.filter((t) => t.status === 'done').length };
+    return { u, ts, over: ts.filter((t) => isOverdue(t, now)).length, act: ts.filter(isActive).length, na: ts.filter((t) => t.status === 'open' && t.assigneeId !== t.createdById).length, blk: ts.filter((t) => isActive(t) && t.isBlocked).length, chk: ts.filter((t) => t.status === 'done').length };
   }).sort((a, b) => b.over - a.over || b.act - a.act);
   const max = Math.max(1, ...people.map((p) => p.act));
   if (!list.length) return <EmptyState art="search" title="Nothing matches" body="Clear a filter to see the board again." />;
   return (
     <div className="space-y-3">
       {people.map(({ u, ts, over, act, na, blk, chk }, i) => (
-        <motion.section key={u.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border" data-testid={`card-person-${u.id}`}>
+        <motion.section key={u.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.3) }} className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border" data-testid={`card-person-${u.id}`}>
           <header className="flex flex-wrap items-center gap-3 border-b border-border/70 px-4 py-4 md:px-5">
             <Avatar p={u} size={34} />
             <div className="min-w-0">
@@ -89,13 +89,15 @@ const Stat = ({ n, l, tone }: { n: number; l: string; tone?: string }) => (
 );
 
 type Col = (typeof COLS)[number];
-function moveAction(from: Ticket['status'], to: Col): TicketActionAction | 'reopen' | null {
+function moveAction(t: Ticket, to: Col, meId: number, isAdmin: boolean): TicketActionAction | null {
+  const from = t.status;
   if (from === to) return null;
-  if (from === 'open' && to === 'accepted') return 'accept';
-  if (from === 'accepted' && to === 'in_progress') return 'start';
-  if ((from === 'accepted' || from === 'in_progress') && to === 'done') return 'done';
-  if (from === 'done' && to === 'closed') return 'close';
-  if ((from === 'done' || from === 'closed') && (to === 'in_progress' || to === 'accepted')) return 'reopen';
+  const c = ticketCaps(t, meId, isAdmin);
+  if (to === 'accepted' && from === 'open' && c.accept) return 'accept';
+  if (to === 'in_progress' && c.start) return 'start';
+  if (to === 'done' && c.done) return 'done';
+  if (to === 'closed' && c.close) return 'close';
+  if ((to === 'in_progress' || to === 'accepted') && c.reopen) return 'reopen';
   return null;
 }
 
@@ -109,13 +111,13 @@ function KCard({ t, dense }: { t: Ticket; dense?: boolean }) {
       <div className="flex min-w-0 items-center gap-2 text-[12px] text-muted-foreground"><PriorityGlyph p={t.priority} /><span className="truncate font-code">{t.code}</span><span className="ml-auto shrink-0"><Avatar p={person(t.assigneeId)} size={20} /></span></div>
       <div className={cn('mt-1.5 break-words font-semibold leading-snug', dense ? 'line-clamp-3 text-[13.5px]' : 'line-clamp-2 text-[14.5px]')}>{t.title}</div>
       <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"><HealthLabel t={t} compact /><TagPill id={t.projectTagId} />{!dense && <TicketFlags t={t} />}</div>
-      <div className="mt-1.5 truncate text-[12px] text-muted-foreground" title={`from ${person(t.createdById)?.name ?? ''}`}>Due {fmtDue(t.dueAt)}{!dense && <> · from {person(t.createdById)?.name}</>}</div>
+      <div className="mt-2 space-y-0.5 text-[12px] text-muted-foreground" data-testid={`text-card-people-${t.id}`}><span className="block truncate">Asked by <span className="font-medium text-foreground/85">{person(t.createdById)?.name}</span></span><span className="block truncate">Owner <span className="font-medium text-foreground/85">{person(t.assigneeId)?.name}</span></span><span className="block truncate tabular-nums">Due {fmtDue(t.dueAt)}</span></div>
     </button>
   );
 }
 
 function Kanban({ list }: { list: Ticket[] }) {
-  const { openTicket, guard } = useWs();
+  const { openTicket, guard, me, isAdmin } = useWs();
   const { run } = useTicketActions();
   const [over, setOver] = useState<Col | null>(null);
   const [tab, setTab] = useState<Col>('open');
@@ -123,10 +125,10 @@ function Kanban({ list }: { list: Ticket[] }) {
     e.preventDefault(); setOver(null);
     const t = list.find((x) => x.id === Number(e.dataTransfer.getData('text/ticket')));
     if (!t) return;
-    const a = moveAction(t.status, c);
-    if (!a) { if (t.status !== c) toast.error(`${t.code} can't move from ${STATUS_LABEL[t.status]} to ${STATUS_LABEL[c]} directly.`); return; }
+    const a = moveAction(t, c, me.id, isAdmin);
+    if (!a) { if (t.status !== c) toast.error(`${t.code} can't move from ${STATUS_LABEL[t.status]} to ${STATUS_LABEL[c]} by you. Open it to see what's possible.`); return; }
     if (!guard('move tickets')) return;
-    if (a === 'reopen') { toast('Reopening needs a reason — do it from the ticket.'); openTicket(t.id); return; }
+    if (a === 'reopen') { toast('Reopening needs a reason. Use Reopen on the ticket.'); openTicket(t.id); return; }
     run(t, { action: a });
   };
   const dz = (c: Col) => ({

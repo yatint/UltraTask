@@ -2,6 +2,7 @@ import { clerkClient, getAuth } from "@clerk/express";
 import type { RequestHandler } from "express";
 import type { Person, Settings, Ticket } from "@workspace/api-zod";
 import { pool, unpack, HttpError, requireCondition, type Store, get } from "../lib/store";
+import { canReadTask } from "../lib/ticket-access";
 
 export const requirePerson: RequestHandler = async (req, res, next) => {
   const { userId } = getAuth(req);
@@ -39,7 +40,7 @@ export async function readableTicket(q: Store, p: Person, id: number, lock = fal
   const t = await get<Ticket>(q, "tickets", id, lock);
   if (!t) throw new HttpError(404, "Ticket not found.");
   const settings = await get<Settings>(q, "settings", 1);
-  requireCondition(involved(p, t) || settings?.membersSeeAllTickets, "Ticket not found.", 404);
+  requireCondition(canReadTask(p, t, settings?.membersSeeAllTickets), "Ticket not found.", 404);
   return t;
 }
 const attempts = new Map<string, { count: number; until: number }>();

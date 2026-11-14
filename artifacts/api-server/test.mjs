@@ -6,7 +6,7 @@ import path from "node:path";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const artifact = fileURLToPath(new URL("./", import.meta.url));
-const tests = ["task-insights", "overdue-reminders"];
+const tests = ["task-insights", "overdue-reminders", "ticket-access"];
 await build({
   entryPoints: tests.map((name) => `${artifact}src/lib/${name}.test.ts`),
   bundle: true, platform: "node", format: "cjs",

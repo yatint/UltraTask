@@ -272,7 +272,7 @@ function WorkspaceSettings() {
           </div>
         </Row>
         <div className="flex items-center justify-between gap-4 py-3">
-          <div><div className="text-sm">Members see all tickets</div><div className="text-xs text-muted-foreground">Off: members see tickets they own, asked, or watch.</div></div>
+          <div><div className="text-sm">Members see all shared tickets</div><div className="text-xs text-muted-foreground">Off: members see tickets they own, asked, or watch. Unwatched self-assigned tasks always stay private.</div></div>
           <Switch checked={all} onCheckedChange={setAll} data-testid="switch-see-all" />
         </div>
       </fieldset>
