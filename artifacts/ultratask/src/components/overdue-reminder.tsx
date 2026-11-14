@@ -31,11 +31,11 @@ export function OverdueReminderButton({ t, variant = 'detail', className }: { t:
   if (!st.show) return null;
   const disabled = send.isPending || st.cooling || st.demo;
   const go = (e: React.MouseEvent) => { e.stopPropagation(); if (!guard('send reminders')) return; send.mutate({ id: t.id }); };
-  const label = send.isPending ? 'Sending' : st.cooling ? `Remind in ${Math.ceil(st.left / 3600000)}h` : variant === 'row' ? 'Remind' : 'Send overdue reminder';
+  const label = send.isPending ? 'Sending' : st.cooling ? `Wait ${Math.ceil(st.left / 3600000)}h` : variant === 'row' ? 'Nudge' : 'Send overdue nudge';
 
   if (variant === 'row') {
     return (
-      <button onClick={go} disabled={disabled} title={st.reason ?? 'In-app reminder to the owner. Email not connected.'} data-testid={`button-remind-${t.id}`}
+      <button onClick={go} disabled={disabled} aria-label={`Send overdue nudge for ${t.code}`} title={st.reason ?? 'Notify the owner in their UltraTask inbox that this task is overdue. Email not connected.'} data-testid={`button-remind-${t.id}`}
         className={cn('inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-signal/30 bg-signal/[0.06] px-2.5 text-[12.5px] font-semibold text-signal transition-[transform,background-color] hover:bg-signal/10 active:scale-[0.97] disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground sm:min-h-8', className)}>
         {send.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BellRing className="h-3.5 w-3.5" />}{label}
       </button>
@@ -58,7 +58,7 @@ export function ReminderNote({ t }: { t: Ticket }) {
   return (
     <p className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted-foreground" data-testid="text-reminder-status">
       <span className="h-1.5 w-1.5 rounded-full dot-overdue" aria-hidden />
-      {st.reason ?? 'Overdue. A reminder lands in the owner’s in-app inbox.'}
+      {st.reason ?? 'Nudge the owner about this overdue task. They receive a notification in their UltraTask inbox.'}
       <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11.5px] font-medium text-foreground/70" data-testid="text-email-status">Email: not connected</span>
     </p>
   );

@@ -47,7 +47,7 @@ const ROW_COLS_CHECK = 'grid-cols-[20px_minmax(0,1fr)] @min-[850px]/task-row:gri
 const HEAD_COLS = 'grid-cols-[0px_minmax(0,1fr)_minmax(0,140px)_minmax(0,140px)_150px_92px]';
 const HEAD_COLS_CHECK = 'grid-cols-[20px_minmax(0,1fr)_minmax(0,140px)_minmax(0,140px)_150px_92px]';
 
-export function TicketRow({ t, selected, onSelect, perspective, checked, onCheck }: {
+export function TicketRow({ t, selected, onSelect, checked, onCheck }: {
   t: Ticket; selected?: boolean; onSelect?: () => void; perspective: 'owner' | 'asker' | 'any'; checked?: boolean; onCheck?: (v: boolean) => void;
 }) {
   const { person, openTicket, me, isAdmin, ws } = useWs();
@@ -125,7 +125,7 @@ export function TicketRow({ t, selected, onSelect, perspective, checked, onCheck
             )}
             {comments > 0 && <span className="inline-flex items-center gap-1"><MessageSquare className="h-3.5 w-3.5" />{comments}</span>}
             <TicketFlags t={t} />
-            {!pa && perspective === 'asker' && <span className="@min-[850px]/task-row:hidden"><OverdueReminderButton t={t} variant="row" /></span>}
+            <span className="@min-[850px]/task-row:hidden"><OverdueReminderButton t={t} variant="row" /></span>
           </div>
         </div>
 
@@ -141,8 +141,8 @@ export function TicketRow({ t, selected, onSelect, perspective, checked, onCheck
           <HealthLabel t={t} compact />
           <span className="pl-[14px] text-[12px] tabular-nums text-muted-foreground">{fmtDue(t.dueAt)}</span>
         </div>
-        <div className="hidden justify-end @min-[850px]/task-row:flex">
-          {!pa && perspective === 'asker' && <OverdueReminderButton t={t} variant="row" className="px-2" />}
+        <div className="hidden flex-col items-end justify-center gap-1 @min-[850px]/task-row:flex">
+          <OverdueReminderButton t={t} variant="row" className="whitespace-nowrap px-2" />
           {pa && (
             <button
               data-testid={`button-quick-${pa.action}-${t.id}`}

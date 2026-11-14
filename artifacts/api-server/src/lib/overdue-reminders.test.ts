@@ -28,10 +28,11 @@ test("real database reminder delivery is atomic, permissioned, deduplicated and 
     const admin = await makePerson("admin");
     const owner = await makePerson("member");
     const other = await makePerson("member");
+    const asker = await makePerson("member");
     const now = Date.now();
     const ticket = await insert<Ticket>(q, "tickets", fixtureTicket({
-      assigneeId: owner.id, createdById: admin.id, dueAt: new Date(now - 86_400_000).toISOString(),
-    }), { assignee_id: owner.id, creator_id: admin.id, watcher_ids: [] });
+      assigneeId: owner.id, createdById: asker.id, dueAt: new Date(now - 86_400_000).toISOString(),
+    }), { assignee_id: owner.id, creator_id: asker.id, watcher_ids: [] });
     const result = await deliverOverdueReminder(q, ticket, admin, now);
     assert.equal(result?.recipientId, owner.id);
     assert.equal(result?.inAppStatus, "sent");
